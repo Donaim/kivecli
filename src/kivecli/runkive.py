@@ -331,7 +331,7 @@ def main(argv: Sequence[str]) -> int:
     ]
 
     runspec = {
-        "name": f"Free {inputpath}",
+        "name": f"Free {inputpath.name}",
         "app": app["url"],
         "groups_allowed": ALLOWED_GROUPS,
         "datasets": dataset_list,
