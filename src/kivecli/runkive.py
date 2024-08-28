@@ -110,7 +110,7 @@ def find_name_and_permissions_match(items: Iterable[Dict[str, object]],
     return None
 
 
-def create_batch(kive: kiveapi.KiveAPI, name: str):
+def create_batch(kive: kiveapi.KiveAPI, name: str) -> Dict[str, object]:
     description = ''
     old_batches = kive.endpoints.batches.filter('name', name)
     batch = find_name_and_permissions_match(old_batches, name, 'batch')
@@ -135,7 +135,7 @@ def calculate_md5_hash(source_file: BinaryIO) -> str:
     return digest.hexdigest()
 
 
-def find_kive_dataset(self,
+def find_kive_dataset(self: kiveapi.KiveAPI,
                       source_file: BinaryIO,
                       dataset_name: str) \
                       -> Optional[Dict[str, object]]:
@@ -165,7 +165,8 @@ def find_kive_containerapp(kive: kiveapi.KiveAPI,
                            -> Dict[str, object]:
 
     if app_id is not None:
-        return kive.endpoints.containerapps.get(app_id)
+        ret: Dict[str, object] = kive.endpoints.containerapps.get(app_id)
+        return ret
 
     raise UserError("Value for app id must be provided.")
 
@@ -173,8 +174,8 @@ def find_kive_containerapp(kive: kiveapi.KiveAPI,
 def upload_or_retrieve_dataset(session: kiveapi.KiveAPI,
                                name: str,
                                inputpath: Path,
-                               users=None,
-                               groups=None) \
+                               users: Optional[Sequence[str]] = None,
+                               groups: Optional[Sequence[str]] = None) \
                                -> Optional[Dataset]:
     """Create a dataset by uploading a file to Kive."""
 
