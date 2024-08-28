@@ -301,7 +301,7 @@ def main(argv: Sequence[str]) -> int:
     except kiveapi.KiveAuthException as e:
         raise UserError("Login failed: %s", str(e))
 
-    logger.debug("Logged in as %r successfully.", user)
+    logger.debug("Logged in successfully.")
 
     if args.output is not None:
         logger.debug("Making output directory at %r.", str(args.output))
