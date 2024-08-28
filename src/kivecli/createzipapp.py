@@ -1,9 +1,14 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
+import os
 import argparse
-import json
-from typing import Dict, Sequence, List, Union, TextIO
+import sys
 import logging
+from typing import Sequence, BinaryIO
+import tempfile
+
+from .zip import zip_directory_to_stream
+from .createpipelinejson import print_pipeline_json
 
 
 # Set up the logger
@@ -24,11 +29,12 @@ class UserError(RuntimeError):
 
 def cli_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Create a pipeline.json file for Kive.")
+        description='Create a "free" Kive app definition.')
 
+    parser.add_argument('--output', type=argparse.FileType("wb"),
+                        required=True, help='Path to the output zip archive.')
     parser.add_argument("--ninputs", type=int, required=True,
                         help="Number of input arguments this app supports.")
-
     parser.add_argument("--noutputs", type=int, required=True,
                         help="Number of output arguments this app supports.")
 
@@ -45,51 +51,36 @@ def cli_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def make_step_input(orig: Dict[str, str]) -> Dict[str, Union[str, int]]:
-    ret: Dict[str, Union[str, int]] = {}
-    ret['dataset_name'] = orig['dataset_name']
-    ret['source_dataset_name'] = orig['dataset_name']
-    ret['source_step'] = 0
-    return ret
+def create_app_zip(output: BinaryIO, ninputs: int, noutputs: int) -> None:
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        kivesubdir = os.path.join(tmpdirname, 'kive')
+        pipelinepath = os.path.join(tmpdirname, 'kive', 'pipeline1.json')
+        driverpath = os.path.join(tmpdirname, 'main.sh')
 
+        os.makedirs(kivesubdir, exist_ok=True)
+        with open(pipelinepath, "wt") as writer:
+            print_pipeline_json(ninputs=ninputs,
+                                noutputs=noutputs,
+                                output=writer)
 
-def print_pipeline_json(ninputs: int, noutputs: int, output: TextIO) -> None:
-    inputs: List[Dict[str, str]] = [
-        {
-            "dataset_name": f"input{i + 1}",
-        } for i in range(ninputs)
-    ]
+        with open(driverpath, "wt") as writer:
+            print("""\
+#! /bin/sh
 
-    outputs: List[Dict[str, Union[str, int]]] = [
-        {
-            "source_dataset_name": f"output{i + 1}",
-            "dataset_name": f"output{i + 1}",
-            "source_step": 1,
-        } for i in range(noutputs)
-    ]
+INPUTSCRIPT="$1"
+shift
 
-    ret = {
-        "inputs": inputs,
-        "outputs": outputs,
-        "steps": [
-            {
-                "driver": "main.sh",
-                "inputs": [make_step_input(x) for x in inputs],
-                "outputs": [x["dataset_name"] for x in outputs],
-            }
-        ],
-        "default_config": {
-            "threads": 1,
-            "memory": 6000,
-        },
-    }
+chmod a+x -- "$INPUTSCRIPT"
+"$INPUTSCRIPT" "$@"
 
-    print(json.dumps(ret, indent='\t'), file=output)
+""", file=writer)
+
+        zip_directory_to_stream(tmpdirname, output)
 
 
 def main(argv: Sequence[str]) -> int:
     parser = cli_parser()
-    args = parser.parse_args(argv)
+    args = parser.parse_args()
     if args.quiet:
         logger.setLevel(logging.ERROR)
     elif args.verbose:
@@ -99,15 +90,14 @@ def main(argv: Sequence[str]) -> int:
     else:
         logger.setLevel(logging.WARN)
 
-    print_pipeline_json(ninputs=args.ninputs,
-                        noutputs=args.noutputs,
-                        output=sys.stdout)
+    create_app_zip(output=args.output,
+                   ninputs=args.ninputs,
+                   noutputs=args.noutputs)
+
     return 0
 
 
 if __name__ == '__main__':
-    import sys
-
     try:
         rc = main(sys.argv[1:])
         logger.debug("Done.")
