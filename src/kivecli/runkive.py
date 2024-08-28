@@ -223,6 +223,7 @@ def await_containerrun(session: kiveapi.KiveAPI,
     runid = containerrun["id"]
     logger.debug("Waiting for run %r to finish.", runid)
 
+    last_state: str = ""
     while elapsed < MAX_WAIT:
         containerrun = session.endpoints.containerruns.get(runid)
 
@@ -232,8 +233,10 @@ def await_containerrun(session: kiveapi.KiveAPI,
 
         elapsed = round(time.time() - starttime, 2)
 
-        logger.debug("Run %r in state %s after %s seconds elapsed.",
-                     runid, state, elapsed)
+        if state != last_state:
+            last_state = state
+            logger.debug("Run %r in state %s after %s seconds elapsed.",
+                         runid, state, elapsed)
 
         if state in ACTIVE_STATES:
             time.sleep(INTERVAL)
