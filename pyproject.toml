@@ -15,7 +15,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "git+https://github.com/cfe-lab/Kive.git@v0.15#egg=kiveapi&subdirectory=api",
+    "kiveapi @ git+https://github.com/cfe-lab/Kive.git@v0.15#egg=kiveapi&subdirectory=api",
 ]
 
 [project.optional-dependencies]
@@ -37,6 +37,9 @@ repository = "https://github.com/Donaim/kivecli"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.mypy]
 files = ["src/kivecli", "tests"]
