@@ -27,7 +27,7 @@ test = [
 ]
 dev = [
     # Dependencies required for development (linting, type checking, etc.)
-    "pylint",
+    "flake8",
     "mypy>=0.800",
 ]
 
