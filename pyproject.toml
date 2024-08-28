@@ -15,6 +15,7 @@ classifiers = [
 ]
 
 dependencies = [
+    "requests",
     "kiveapi @ git+https://github.com/cfe-lab/Kive.git@v0.15#egg=kiveapi&subdirectory=api",
 ]
 
