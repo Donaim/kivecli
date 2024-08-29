@@ -56,6 +56,10 @@ def make_step_input(orig: Dict[str, str]) -> Dict[str, Union[str, int]]:
 def print_pipeline_json(ninputs: int, noutputs: int, output: TextIO) -> None:
     inputs: List[Dict[str, str]] = [
         {
+            "dataset_name": "script",
+        },
+    ] + [
+        {
             "dataset_name": f"input{i + 1}",
         } for i in range(ninputs)
     ]
