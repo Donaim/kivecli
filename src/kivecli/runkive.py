@@ -82,14 +82,23 @@ ALLOWED_GROUPS = ['Everyone']
 
 def download_results(kive: kiveapi.KiveAPI,
                      containerrun: Dict[str, object],
-                     output: Path) -> None:
+                     output: Optional[Path]) -> None:
     # Retrieve outputs and save to files.
 
     run_datasets = kive.get(containerrun["dataset_list"]).json()
     for run_dataset in run_datasets:
         if run_dataset.get("argument_type") == "O":
             dataset = kive.get(run_dataset["dataset"]).json()
+            checksum = dataset['MD5_checksum']
+            name = run_dataset['argument_name']
+            logger.debug("Output %r has MD5 hash %s.", name, checksum)
             filename = dataset["name"]
+            logger.debug("File name %r corresponds to Kive argument name %r.",
+                         filename, name)
+
+            if output is None:
+                continue
+
             filepath = output / filename
             logger.debug("Downloading %r to %r.", filename, str(filepath))
             with open(filepath, "wb") as outf:
@@ -262,7 +271,7 @@ def await_containerrun(session: kiveapi.KiveAPI,
 def get_input_datasets(kive: kiveapi.KiveAPI,
                        script: Path,
                        inputs: Iterable[Path]) \
-        -> Iterable[str]:
+        -> Iterable[Dataset]:
 
     for arg in ([script] + list(inputs)):
         dataset = upload_or_retrieve_dataset(
@@ -273,7 +282,7 @@ def get_input_datasets(kive: kiveapi.KiveAPI,
         )
 
         assert dataset is not None, "Expected a dataset."
-        yield dataset.raw["url"]
+        yield dataset
 
 
 def main(argv: Sequence[str]) -> int:
@@ -334,14 +343,26 @@ def main(argv: Sequence[str]) -> int:
         raise UserError("At most %r inputs supported, but got %r.",
                         len(input_appargs), len(inputs))
 
+    for (x, y) in zip(input_appargs, inputs):
+        kive_name = x["name"]
+        filename = os.path.basename(y)
+        logger.debug("File name %r corresponds to Kive argument name %r.",
+                     filename, kive_name)
+
     appargs_urls = [x["url"] for x in input_appargs]
-    input_datasets = get_input_datasets(kive, inputpath, inputs)
+    input_datasets = list(get_input_datasets(kive, inputpath, inputs))
+    datasets_urls = [x.raw["url"] for x in input_datasets]
     dataset_list = [
         {
             "argument": x,
             "dataset": y,
-        } for (x, y) in zip(appargs_urls, input_datasets)
+        } for (x, y) in zip(appargs_urls, datasets_urls)
     ]
+
+    for (x, y) in zip(input_appargs, input_datasets):
+        name = x["name"]
+        checksum = y.raw['MD5_checksum']
+        logger.debug("Input %r has MD5 hash %s.", name, checksum)
 
     runspec = {
         "name": f"Free {inputpath.name}",
@@ -360,8 +381,7 @@ def main(argv: Sequence[str]) -> int:
     logger.debug("Started at %r.", url)
 
     containerrun = await_containerrun(kive, containerrun)
-    if args.output is not None:
-        download_results(kive, containerrun, args.output)
+    download_results(kive, containerrun, args.output)
 
     log_list = kive.get(containerrun["log_list"]).json()
     for log in log_list:
