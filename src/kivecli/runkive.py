@@ -315,7 +315,11 @@ def main(argv: Sequence[str]) -> int:
     # Get the app from a container family.
     app = find_kive_containerapp(kive, str(args.app_id))
     app_link = kive.server_url + app["absolute_url"]
+    app_name = app["name"]
+    app_container = app["container_name"]
     logger.debug("Using app %r.", app_link)
+    logger.debug("App name is %r.", app_name)
+    logger.debug("App container is %r.", app_container)
 
     appid = app['id']
     appargs = kive.endpoints.containerapps.get(f"{appid}/argument_list")
