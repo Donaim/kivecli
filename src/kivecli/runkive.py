@@ -214,6 +214,7 @@ def await_containerrun(session: kiveapi.KiveAPI,
     """
 
     ACTIVE_STATES = ["N", "S", "L", "R"]
+    FAIL_STATES = ["X", "F"]
     INTERVAL = 1.0
     MAX_WAIT = float("inf")
 
@@ -243,8 +244,11 @@ def await_containerrun(session: kiveapi.KiveAPI,
         elif state == "C":
             logger.debug("Run finished after %s seconds.", elapsed)
             break
-        else:
+        elif state in FAIL_STATES:
             logger.warning("Run failed after %s seconds.", elapsed)
+        else:
+            logger.warning("Run failed catastrophically after %s seconds.",
+                           elapsed)
             break
     else:
         logger.warning("Run timed out after %s seconds.", elapsed)
