@@ -31,7 +31,7 @@ def main(argv: Sequence[str]) -> int:
         raise RuntimeError(f"Unknown program value {repr(args.program)}")
 
 
-if __name__ == '__main__':
+def cli() -> None:
     try:
         rc = main(sys.argv[1:])
     except BrokenPipeError:
@@ -40,3 +40,7 @@ if __name__ == '__main__':
         rc = 1
 
     sys.exit(rc)
+
+
+if __name__ == '__main__':
+    cli()

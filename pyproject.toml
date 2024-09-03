@@ -19,6 +19,9 @@ dependencies = [
     "kiveapi @ git+https://github.com/cfe-lab/Kive.git@v0.15#egg=kiveapi&subdirectory=api",
 ]
 
+[project.scripts]
+kivecli = "kivecli.main:cli"
+
 [project.optional-dependencies]
 test = [
     # Dependencies required for running the test suite
