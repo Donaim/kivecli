@@ -1,6 +1,8 @@
 
 import os
 from contextvars import ContextVar
+from contextlib import contextmanager
+from typing import Iterator
 
 import kiveapi
 
@@ -10,15 +12,16 @@ from .logger import logger
 session: ContextVar[kiveapi.KiveAPI] = ContextVar("KiveSession")
 
 
-def login() -> kiveapi.KiveAPI:
+@contextmanager
+def login() -> Iterator[kiveapi.KiveAPI]:
     existing = session.get(None)
     if existing is not None:
-        return existing
+        yield existing
 
     ctx = login_try()
     token = session.set(ctx)
     try:
-        return ctx
+        yield ctx
     finally:
         session.reset(token)
 

@@ -264,15 +264,14 @@ def get_input_datasets(kive: kiveapi.KiveAPI,
         yield dataset
 
 
-def main_logged_in(output: Optional[DirPath],
+def main_logged_in(kive: kiveapi.KiveAPI,
+                   output: Optional[DirPath],
                    batch: Optional[str],
                    stdout: BinaryIO,
                    stderr: BinaryIO,
                    app_id: int,
                    inputs: Sequence[PathOrURL],
                    ) -> int:
-
-    kive = login()
 
     if output is not None:
         logger.debug("Making output directory at %r.", str(output))
@@ -373,8 +372,9 @@ def main_parsed(output: Optional[DirPath],
                 inputs: Sequence[PathOrURL],
                 ) -> int:
 
-    with login():
-        return main_logged_in(output=output,
+    with login() as kive:
+        return main_logged_in(kive=kive,
+                              output=output,
                               batch=batch,
                               stdout=stdout,
                               stderr=stderr,

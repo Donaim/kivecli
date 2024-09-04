@@ -2,12 +2,12 @@
 
 import argparse
 import sys
-import os
 from typing import Sequence, Iterator
 
 import kiveapi
 
-from .usererror import UserError
+import kivecli.runkive as runkive
+# from .usererror import UserError
 from .logger import logger
 from .pathorurl import PathOrURL
 from .url import URL
@@ -16,11 +16,12 @@ from .inputfileorurl import input_file_or_url
 from .urlargument import url_argument
 from .mainwrap import mainwrap
 from .parsecli import parse_cli
+from .login import login
 
 
 def collect_run_inputs(kive: kiveapi.KiveAPI, run_id: int) -> Iterator[URL]:
     containerrun = kive.endpoints.containerruns.get(run_id)
-    logger.debug("Got run %s.", containerrun)
+    logger.debug("Found run with id %s at %r.", run_id, containerrun["url"])
 
     run_datasets = kive.get(containerrun["dataset_list"]).json()
     for run_dataset in run_datasets:
@@ -75,36 +76,23 @@ def main(argv: Sequence[str]) -> int:
     parser = cli_parser()
     args = parse_cli(parser, argv)
 
-    logger.debug("Start.")
+    with login() as kive:
+        prefix: Sequence[PathOrURL] = args.prefix
+        assert prefix or not prefix
 
-    server = os.environ.get("MICALL_KIVE_SERVER")
-    user = os.environ.get("MICALL_KIVE_USER")
-    password = os.environ.get("MICALL_KIVE_PASSWORD")
+        urls = list(collect_run_inputs(kive, args.app_id))
+        assert urls
 
-    if server is None:
-        raise UserError("Must set $MICALL_KIVE_SERVER environment variable.")
-    if user is None:
-        raise UserError("Must set $MICALL_KIVE_USER environment variable.")
-    if password is None:
-        raise UserError("Must set $MICALL_KIVE_PASSWORD environment variable.")
+        logger.debug("Got datasets: %s", urls)
 
-    kive = kiveapi.KiveAPI(server)
-    try:
-        kive.login(user, password)
-    except kiveapi.KiveAuthException as e:
-        raise UserError("Login failed: %s", str(e))
-
-    logger.debug("Logged in as %r on server %r.", user, server)
-
-    prefix: Sequence[PathOrURL] = args.prefix
-    assert prefix or not prefix
-
-    urls = list(collect_run_inputs(kive, args.app_id))
-    assert urls
-
-    logger.debug("Got datasets: %s", urls)
-
-    return 1
+        return runkive.main_parsed(
+            output=args.output,
+            batch=args.batch,
+            stdout=args.stdout,
+            stderr=args.stderr,
+            app_id=args.app_id,
+            inputs=urls,
+        )
 
 
 def cli() -> None:
