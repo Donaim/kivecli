@@ -1,34 +1,59 @@
 #! /usr/bin/env python3
 
-import argparse
 import sys
 from typing import Sequence
 
 import kivecli.runkive as runkive
 import kivecli.zip as kiveclizip
 
+PROGRAMS = ["run", "zip"]
 
-def cli_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Use Kive via CLI.")
-    parser.add_argument("program",
-                        choices=["run", "zip"],
-                        help="Program to run.")
-    parser.add_argument("arguments", nargs="*",
-                        help="Arguments to the script.")
+HELP_MESSAGE = """\
+usage: kivecli [-h] {programs} [arguments ...]
 
-    return parser
+Use Kive via CLI.
+
+positional arguments:
+  {programs} Program to run.
+  arguments   Arguments to the script.
+
+options:
+  -h, --help  show this help message and exit
+""".format(programs='{' + ','.join(PROGRAMS) + '}')
+
+PROGRAM_ERROR_MESSAGE = """\
+usage: main.py [-h] {programs} [arguments ...]
+main.py: error: argument program: invalid choice: 'hello' (choose from {lst})
+""".format(programs='{' + ','.join(PROGRAMS) + '}',
+           lst=', '.join(map(repr, PROGRAMS)))
+
+PROGRAM_MISSING_MESSAGE = """\
+usage: main.py [-h] {programs} [arguments ...]
+kivecli: error: the following arguments are required: program, arguments
+""".format(programs='{' + ','.join(PROGRAMS) + '}')
 
 
 def main(argv: Sequence[str]) -> int:
-    parser = cli_parser()
-    args = parser.parse_args(argv)
+    if len(argv) <= 1:
+        print(PROGRAM_MISSING_MESSAGE, file=sys.stderr, end='')
+        return 1
 
-    if args.program == "run":
-        return runkive.main(args.arguments)
-    elif args.program == "run":
-        return kiveclizip.main(args.arguments)
+    program = argv[0]
+    if program == "-h" or program == "--help":
+        print(HELP_MESSAGE, file=sys.stdout, end='')
+        return 0
+
+    if program not in PROGRAMS:
+        print(PROGRAM_ERROR_MESSAGE, file=sys.stderr, end='')
+        return 1
+
+    arguments = argv[1:]
+    if program == "run":
+        return runkive.main(arguments)
+    elif program == "zip":
+        return kiveclizip.main(arguments)
     else:
-        raise RuntimeError(f"Unknown program value {repr(args.program)}")
+        raise RuntimeError(f"Unknown program value {repr(program)}")
 
 
 def cli() -> None:
