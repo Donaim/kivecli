@@ -2,15 +2,14 @@
 
 import os
 import argparse
-import sys
 import logging
 from typing import Sequence, BinaryIO
 import tempfile
 
 from .zip import zip_directory_to_stream
 from .createpipelinejson import print_pipeline_json
-from .usererror import UserError
 from .logger import logger
+from .mainwrap import mainwrap
 
 
 def cli_parser() -> argparse.ArgumentParser:
@@ -83,18 +82,9 @@ def main(argv: Sequence[str]) -> int:
     return 0
 
 
-if __name__ == '__main__':
-    try:
-        rc = main(sys.argv[1:])
-        logger.debug("Done.")
-    except BrokenPipeError:
-        logger.debug("Broken pipe.")
-        rc = 1
-    except KeyboardInterrupt:
-        logger.debug("Interrupted.")
-        rc = 1
-    except UserError as e:
-        logger.fatal(e.fmt, *e.fmt_args)
-        rc = e.code
+def cli() -> None:
+    mainwrap(main)
 
-    sys.exit(rc)
+
+if __name__ == '__main__':
+    cli()

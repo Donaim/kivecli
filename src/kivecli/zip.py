@@ -8,7 +8,7 @@ from typing import BinaryIO, Sequence
 from pathlib import Path
 
 from .usererror import UserError
-from .logger import logger
+from .mainwrap import mainwrap
 
 
 def zip_directory_to_stream(directory_path: str,
@@ -51,18 +51,9 @@ def main(argv: Sequence[str]) -> int:
     return 0
 
 
-if __name__ == '__main__':
-    try:
-        rc = main(sys.argv[1:])
-        logger.debug("Done.")
-    except BrokenPipeError:
-        logger.debug("Broken pipe.")
-        rc = 1
-    except KeyboardInterrupt:
-        logger.debug("Interrupted.")
-        rc = 1
-    except UserError as e:
-        logger.fatal(e.fmt, *e.fmt_args)
-        rc = e.code
+def cli() -> None:
+    mainwrap(main)
 
-    sys.exit(rc)
+
+if __name__ == '__main__':
+    cli()

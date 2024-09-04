@@ -4,20 +4,39 @@ import argparse
 import sys
 import os
 import logging
-from pathlib import Path
-from typing import Sequence
+from typing import Sequence, Iterator
 
 import kiveapi
 
 from .usererror import UserError
 from .logger import logger
+from .pathorurl import PathOrURL
+from .url import URL
+from .dirpath import dir_path
+from .inputfileorurl import input_file_or_url
+from .urlargument import url_argument
+from .mainwrap import mainwrap
 
 
-def dir_path(string: str) -> Path:
-    if (not os.path.exists(string)) or os.path.isdir(string):
-        return Path(string)
-    else:
-        raise UserError("Path %r is not a directory.", string)
+def collect_run_inputs(kive: kiveapi.KiveAPI, run_id: int) -> Iterator[URL]:
+    containerrun = kive.endpoints.containerruns.get(run_id)
+    logger.debug("Got run %s.", containerrun)
+
+    run_datasets = kive.get(containerrun["dataset_list"]).json()
+    for run_dataset in run_datasets:
+        if run_dataset.get("argument_type") == "I":
+            dataset = kive.get(run_dataset["dataset"]).json()
+            checksum = dataset['MD5_checksum']
+            name = run_dataset['argument_name']
+            logger.debug("Input %r has MD5 hash %s.", name, checksum)
+            filename = dataset["name"]
+            logger.debug("File name %r corresponds to Kive argument name %r.",
+                         filename, name)
+
+            url_string: str = run_dataset["dataset"]
+            url = url_argument(url_string)
+
+            yield url
 
 
 def cli_parser() -> argparse.ArgumentParser:
@@ -55,7 +74,7 @@ def cli_parser() -> argparse.ArgumentParser:
 
     parser.add_argument("--prefix",
                         nargs="*",
-                        type=argparse.FileType('r'),
+                        type=input_file_or_url,
                         help="Files that will be added to the list of"
                         " inputs (prepended at the beginning).")
 
@@ -95,38 +114,19 @@ def main(argv: Sequence[str]) -> int:
 
     logger.debug("Logged in as %r on server %r.", user, server)
 
-    containerrun = kive.endpoints.containerruns.get(args.run_id)
-    logger.debug("Got run %s.", containerrun)
+    prefix: Sequence[PathOrURL] = args.prefix
+    assert prefix or not prefix
 
-    run_datasets = kive.get(containerrun["dataset_list"]).json()
-    for run_dataset in run_datasets:
-        if run_dataset.get("argument_type") == "I":
-            dataset = kive.get(run_dataset["dataset"]).json()
-            checksum = dataset['MD5_checksum']
-            name = run_dataset['argument_name']
-            logger.debug("Input %r has MD5 hash %s.", name, checksum)
-            filename = dataset["name"]
-            logger.debug("File name %r corresponds to Kive argument name %r.",
-                         filename, name)
+    urls = list(collect_run_inputs(kive, args.app_id))
+    assert urls
+
+    logger.debug("Got datasets: %s", urls)
 
     return 1
 
 
 def cli() -> None:
-    try:
-        rc = main(sys.argv[1:])
-        logger.debug("Done.")
-    except BrokenPipeError:
-        logger.debug("Broken pipe.")
-        rc = 1
-    except KeyboardInterrupt:
-        logger.debug("Interrupted.")
-        rc = 1
-    except UserError as e:
-        logger.fatal(e.fmt, *e.fmt_args)
-        rc = e.code
-
-    sys.exit(rc)
+    mainwrap(main)
 
 
 if __name__ == '__main__':

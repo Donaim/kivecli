@@ -4,9 +4,10 @@ import argparse
 import json
 from typing import Dict, Sequence, List, Union, TextIO
 import logging
+import sys
 
-from .usererror import UserError
 from .logger import logger
+from .mainwrap import mainwrap
 
 
 def cli_parser() -> argparse.ArgumentParser:
@@ -96,20 +97,9 @@ def main(argv: Sequence[str]) -> int:
     return 0
 
 
+def cli() -> None:
+    mainwrap(main)
+
+
 if __name__ == '__main__':
-    import sys
-
-    try:
-        rc = main(sys.argv[1:])
-        logger.debug("Done.")
-    except BrokenPipeError:
-        logger.debug("Broken pipe.")
-        rc = 1
-    except KeyboardInterrupt:
-        logger.debug("Interrupted.")
-        rc = 1
-    except UserError as e:
-        logger.fatal(e.fmt, *e.fmt_args)
-        rc = e.code
-
-    sys.exit(rc)
+    cli()

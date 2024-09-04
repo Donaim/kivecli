@@ -5,10 +5,8 @@ import sys
 import os
 import logging
 import hashlib
-from typing import cast, Sequence, BinaryIO, Dict, Iterable, Optional, \
-    Union, TypeAlias, NewType, NoReturn
+from typing import cast, Sequence, BinaryIO, Dict, Iterable, Optional, NoReturn
 from pathlib import Path
-from urllib.parse import urlparse
 import time
 
 import kiveapi
@@ -16,51 +14,10 @@ from kiveapi.dataset import Dataset
 
 from kivecli.usererror import UserError
 from .logger import logger
-
-
-URL = NewType('URL', str)
-PathOrURL: TypeAlias = Union[Path, URL]
-
-
-def dir_path(string: str) -> Path:
-    if (not os.path.exists(string)) or os.path.isdir(string):
-        return Path(string)
-    else:
-        raise UserError("Path %r is not a directory.", string)
-
-
-def url_argument(string: str) -> URL:
-    try:
-        parsed = urlparse(string)
-    except Exception:
-        raise UserError("Argument %r is not a URL.", string)
-
-    #
-    # A URL is considered valid if it has both a scheme and a netloc.
-    #
-
-    if not parsed.scheme:
-        raise UserError("Argument %r is missing a scheme to be a URL.", string)
-
-    if not parsed.netloc:
-        raise UserError("Argument %r is missing a netloc to be a URL.", string)
-
-    return URL(string)
-
-
-def input_file_or_url(string: str) -> PathOrURL:
-    factory = argparse.FileType('r')
-    try:
-        with factory(string):
-            pass
-        return Path(string)
-    except Exception as e1:
-        try:
-            return url_argument(string)
-        except Exception as e2:
-            raise UserError("Argument %r is neither"
-                            " an input file (%s) nor a URL (%s).",
-                            string, e1, e2)
+from .pathorurl import PathOrURL
+from .dirpath import dir_path
+from .inputfileorurl import input_file_or_url
+from .mainwrap import mainwrap
 
 
 def cli_parser() -> argparse.ArgumentParser:
@@ -448,18 +405,9 @@ def main(argv: Sequence[str]) -> int:
         return 1
 
 
-if __name__ == '__main__':
-    try:
-        rc = main(sys.argv[1:])
-        logger.debug("Done.")
-    except BrokenPipeError:
-        logger.debug("Broken pipe.")
-        rc = 1
-    except KeyboardInterrupt:
-        logger.debug("Interrupted.")
-        rc = 1
-    except UserError as e:
-        logger.fatal(e.fmt, *e.fmt_args)
-        rc = e.code
+def cli() -> None:
+    mainwrap(main)
 
-    sys.exit(rc)
+
+if __name__ == '__main__':
+    cli()

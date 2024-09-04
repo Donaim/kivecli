@@ -64,7 +64,7 @@ def main(argv: Sequence[str]) -> int:
 def cli() -> None:
     try:
         rc = main(sys.argv[1:])
-        logger.debug("Done.")
+        logger.debug("Done (%r).", rc)
     except BrokenPipeError:
         logger.debug("Broken pipe.")
         rc = 1
