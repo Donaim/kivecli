@@ -373,8 +373,11 @@ def main(argv: Sequence[str]) -> int:
     appid = app['id']
     appargs = kive.endpoints.containerapps.get(f"{appid}/argument_list")
     input_appargs = [x for x in appargs if x["type"] == "I"]
-    if len(inputs) > len(input_appargs):
+    if len(inputs) + 1 > len(input_appargs):
         raise UserError("At most %r inputs supported, but got %r.",
+                        len(input_appargs), len(inputs))
+    if len(inputs) + 1 < len(input_appargs):
+        raise UserError("At least %r inputs supported, but got %r.",
                         len(input_appargs), len(inputs))
 
     for (x, y) in zip(input_appargs, [args.script] + inputs):
