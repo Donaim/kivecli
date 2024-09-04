@@ -3,7 +3,6 @@
 import argparse
 import sys
 import os
-import logging
 import hashlib
 from typing import cast, Sequence, BinaryIO, Dict, Iterable, Optional, NoReturn
 from pathlib import Path
@@ -18,6 +17,7 @@ from .pathorurl import PathOrURL
 from .dirpath import dir_path
 from .inputfileorurl import input_file_or_url
 from .mainwrap import mainwrap
+from .parsecli import parse_cli
 
 
 def cli_parser() -> argparse.ArgumentParser:
@@ -38,16 +38,6 @@ def cli_parser() -> argparse.ArgumentParser:
                         help="Redirected stderr to file.")
     parser.add_argument("--app_id", type=int, required=True,
                         help="App id of the target pipeline.")
-
-    verbosity_group = parser.add_mutually_exclusive_group()
-    verbosity_group.add_argument('--verbose', action='store_true',
-                                 help='Increase output verbosity.')
-    verbosity_group.add_argument('--no-verbose', action='store_true',
-                                 help='Normal output verbosity.', default=True)
-    verbosity_group.add_argument('--debug', action='store_true',
-                                 help='Maximum output verbosity.')
-    verbosity_group.add_argument('--quiet', action='store_true',
-                                 help='Minimize output verbosity.')
 
     parser.add_argument("script", type=input_file_or_url,
                         help="Path to the script to be run.")
@@ -281,15 +271,7 @@ def get_input_datasets(kive: kiveapi.KiveAPI,
 
 def main(argv: Sequence[str]) -> int:
     parser = cli_parser()
-    args = parser.parse_args(argv)
-    if args.quiet:
-        logger.setLevel(logging.ERROR)
-    elif args.verbose:
-        logger.setLevel(logging.INFO)
-    elif args.debug:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(logging.WARN)
+    args = parse_cli(parser, argv)
 
     logger.debug("Start.")
 

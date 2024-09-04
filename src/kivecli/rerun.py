@@ -3,7 +3,6 @@
 import argparse
 import sys
 import os
-import logging
 from typing import Sequence, Iterator
 
 import kiveapi
@@ -16,6 +15,7 @@ from .dirpath import dir_path
 from .inputfileorurl import input_file_or_url
 from .urlargument import url_argument
 from .mainwrap import mainwrap
+from .parsecli import parse_cli
 
 
 def collect_run_inputs(kive: kiveapi.KiveAPI, run_id: int) -> Iterator[URL]:
@@ -41,16 +41,6 @@ def collect_run_inputs(kive: kiveapi.KiveAPI, run_id: int) -> Iterator[URL]:
 
 def cli_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Rerun a Kive run.")
-
-    verbosity_group = parser.add_mutually_exclusive_group()
-    verbosity_group.add_argument('--verbose', action='store_true',
-                                 help='Increase output verbosity.')
-    verbosity_group.add_argument('--no-verbose', action='store_true',
-                                 help='Normal output verbosity.', default=True)
-    verbosity_group.add_argument('--debug', action='store_true',
-                                 help='Maximum output verbosity.')
-    verbosity_group.add_argument('--quiet', action='store_true',
-                                 help='Minimize output verbosity.')
 
     parser.add_argument("--output", type=dir_path,
                         help="Output folder where results are downloaded."
@@ -83,15 +73,7 @@ def cli_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str]) -> int:
     parser = cli_parser()
-    args = parser.parse_args(argv)
-    if args.quiet:
-        logger.setLevel(logging.ERROR)
-    elif args.verbose:
-        logger.setLevel(logging.INFO)
-    elif args.debug:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(logging.WARN)
+    args = parse_cli(parser, argv)
 
     logger.debug("Start.")
 

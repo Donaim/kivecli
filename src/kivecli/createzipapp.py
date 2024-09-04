@@ -2,14 +2,13 @@
 
 import os
 import argparse
-import logging
 from typing import Sequence, BinaryIO
 import tempfile
 
 from .zip import zip_directory_to_stream
 from .createpipelinejson import print_pipeline_json
-from .logger import logger
 from .mainwrap import mainwrap
+from .parsecli import parse_cli
 
 
 def cli_parser() -> argparse.ArgumentParser:
@@ -22,16 +21,6 @@ def cli_parser() -> argparse.ArgumentParser:
                         help="Number of input arguments this app supports.")
     parser.add_argument("--noutputs", type=int, required=True,
                         help="Number of output arguments this app supports.")
-
-    verbosity_group = parser.add_mutually_exclusive_group()
-    verbosity_group.add_argument('--verbose', action='store_true',
-                                 help='Increase output verbosity.')
-    verbosity_group.add_argument('--no-verbose', action='store_true',
-                                 help='Normal output verbosity.', default=True)
-    verbosity_group.add_argument('--debug', action='store_true',
-                                 help='Maximum output verbosity.')
-    verbosity_group.add_argument('--quiet', action='store_true',
-                                 help='Minimize output verbosity.')
 
     return parser
 
@@ -65,16 +54,7 @@ chmod a+x -- "$INPUTSCRIPT"
 
 def main(argv: Sequence[str]) -> int:
     parser = cli_parser()
-    args = parser.parse_args()
-    if args.quiet:
-        logger.setLevel(logging.ERROR)
-    elif args.verbose:
-        logger.setLevel(logging.INFO)
-    elif args.debug:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(logging.WARN)
-
+    args = parse_cli(parser, argv)
     create_app_zip(output=args.output,
                    ninputs=args.ninputs,
                    noutputs=args.noutputs)

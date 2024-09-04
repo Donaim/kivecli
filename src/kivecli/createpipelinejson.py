@@ -3,11 +3,10 @@
 import argparse
 import json
 from typing import Dict, Sequence, List, Union, TextIO
-import logging
 import sys
 
-from .logger import logger
 from .mainwrap import mainwrap
+from .parsecli import parse_cli
 
 
 def cli_parser() -> argparse.ArgumentParser:
@@ -16,19 +15,8 @@ def cli_parser() -> argparse.ArgumentParser:
 
     parser.add_argument("--ninputs", type=int, required=True,
                         help="Number of input arguments this app supports.")
-
     parser.add_argument("--noutputs", type=int, required=True,
                         help="Number of output arguments this app supports.")
-
-    verbosity_group = parser.add_mutually_exclusive_group()
-    verbosity_group.add_argument('--verbose', action='store_true',
-                                 help='Increase output verbosity.')
-    verbosity_group.add_argument('--no-verbose', action='store_true',
-                                 help='Normal output verbosity.', default=True)
-    verbosity_group.add_argument('--debug', action='store_true',
-                                 help='Maximum output verbosity.')
-    verbosity_group.add_argument('--quiet', action='store_true',
-                                 help='Minimize output verbosity.')
 
     return parser
 
@@ -81,16 +69,7 @@ def print_pipeline_json(ninputs: int, noutputs: int, output: TextIO) -> None:
 
 def main(argv: Sequence[str]) -> int:
     parser = cli_parser()
-    args = parser.parse_args(argv)
-    if args.quiet:
-        logger.setLevel(logging.ERROR)
-    elif args.verbose:
-        logger.setLevel(logging.INFO)
-    elif args.debug:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(logging.WARN)
-
+    args = parse_cli(parser, argv)
     print_pipeline_json(ninputs=args.ninputs,
                         noutputs=args.noutputs,
                         output=sys.stdout)
