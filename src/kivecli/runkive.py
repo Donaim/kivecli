@@ -28,6 +28,8 @@ def cli_parser() -> argparse.ArgumentParser:
                         help="Output folder where results are downloaded."
                         " Not downloading by default.")
 
+    parser.add_argument("--nowait", action='store_true', default=False,
+                        help="Do not wait until the run is finished.")
     parser.add_argument("--batch", help="Unique name for the batch.")
     parser.add_argument("--stdout",
                         default=sys.stdout.buffer,
@@ -271,6 +273,7 @@ def main_logged_in(kive: kiveapi.KiveAPI,
                    stderr: BinaryIO,
                    app_id: int,
                    inputs: Sequence[PathOrURL],
+                   nowait: bool,
                    ) -> int:
 
     if output is not None:
@@ -338,6 +341,9 @@ def main_logged_in(kive: kiveapi.KiveAPI,
     url = kive.server_url + containerrun["absolute_url"]
     logger.debug("Started at %r.", url)
 
+    if nowait:
+        return 0
+
     containerrun = await_containerrun(kive, containerrun)
     download_results(kive, containerrun, output)
 
@@ -370,6 +376,7 @@ def main_parsed(output: Optional[DirPath],
                 stderr: BinaryIO,
                 app_id: int,
                 inputs: Sequence[PathOrURL],
+                nowait: bool,
                 ) -> int:
 
     with login() as kive:
@@ -380,6 +387,7 @@ def main_parsed(output: Optional[DirPath],
                               stderr=stderr,
                               app_id=app_id,
                               inputs=inputs,
+                              nowait=nowait,
                               )
 
 
@@ -393,6 +401,7 @@ def main(argv: Sequence[str]) -> int:
                        stderr=args.stderr,
                        app_id=args.app_id,
                        inputs=inputs,
+                       nowait=args.nowait,
                        )
 
 

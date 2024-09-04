@@ -46,6 +46,8 @@ def cli_parser() -> argparse.ArgumentParser:
                         help="Output folder where results are downloaded."
                         " Not downloading by default.")
 
+    parser.add_argument("--nowait", action='store_true', default=False,
+                        help="Do not wait until the run is finished.")
     parser.add_argument("--batch", help="Unique name for the batch.")
     parser.add_argument("--stdout",
                         default=sys.stdout.buffer,
@@ -89,6 +91,7 @@ def main(argv: Sequence[str]) -> int:
             stderr=args.stderr,
             app_id=args.app_id,
             inputs=inputs,
+            nowait=args.nowait,
         )
 
 
