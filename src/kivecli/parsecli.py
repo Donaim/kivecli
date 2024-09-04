@@ -27,4 +27,6 @@ def parse_cli(parser: ArgumentParser, args: Sequence[str]) -> Namespace:
     else:
         logger.setLevel(logging.WARN)
 
+    logger.debug("Start.")
+
     return ret

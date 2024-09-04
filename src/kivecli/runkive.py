@@ -14,10 +14,11 @@ from kiveapi.dataset import Dataset
 from kivecli.usererror import UserError
 from .logger import logger
 from .pathorurl import PathOrURL
-from .dirpath import dir_path
+from .dirpath import dir_path, DirPath
 from .inputfileorurl import input_file_or_url
 from .mainwrap import mainwrap
 from .parsecli import parse_cli
+from .login import login
 
 
 def cli_parser() -> argparse.ArgumentParser:
@@ -263,39 +264,21 @@ def get_input_datasets(kive: kiveapi.KiveAPI,
         yield dataset
 
 
-def main(argv: Sequence[str]) -> int:
-    parser = cli_parser()
-    args = parse_cli(parser, argv)
+def main_logged_in(kive: kiveapi.KiveAPI,
+                   output: Optional[DirPath],
+                   batch: Optional[str],
+                   stdout: BinaryIO,
+                   stderr: BinaryIO,
+                   app_id: int,
+                   inputs: Sequence[PathOrURL],
+                   ) -> int:
 
-    logger.debug("Start.")
-
-    server = os.environ.get("MICALL_KIVE_SERVER")
-    user = os.environ.get("MICALL_KIVE_USER")
-    password = os.environ.get("MICALL_KIVE_PASSWORD")
-
-    if server is None:
-        raise UserError("Must set $MICALL_KIVE_SERVER environment variable.")
-    if user is None:
-        raise UserError("Must set $MICALL_KIVE_USER environment variable.")
-    if password is None:
-        raise UserError("Must set $MICALL_KIVE_PASSWORD environment variable.")
-
-    inputs = args.inputs or []
-
-    kive = kiveapi.KiveAPI(server)
-    try:
-        kive.login(user, password)
-    except kiveapi.KiveAuthException as e:
-        raise UserError("Login failed: %s", str(e))
-
-    logger.debug("Logged in as %r on server %r.", user, server)
-
-    if args.output is not None:
-        logger.debug("Making output directory at %r.", str(args.output))
-        os.makedirs(args.output, exist_ok=True)
+    if output is not None:
+        logger.debug("Making output directory at %r.", str(output))
+        os.makedirs(output, exist_ok=True)
 
     # Get the app from a container family.
-    app = find_kive_containerapp(kive, str(args.app_id))
+    app = find_kive_containerapp(kive, str(app_id))
     app_link = kive.server_url + app["absolute_url"]
     app_name = app["name"]
     app_container = app["container_name"]
@@ -334,9 +317,9 @@ def main(argv: Sequence[str]) -> int:
         } for (x, y) in zip(appargs_urls, datasets_urls)
     ]
 
-    for (x, y) in zip(input_appargs, input_datasets):
-        name = x["name"]
-        checksum = y.raw['MD5_checksum']
+    for (apparg, dataset) in zip(input_appargs, input_datasets):
+        name = apparg["name"]
+        checksum = dataset.raw['MD5_checksum']
         logger.debug("Input %r has MD5 hash %s.", name, checksum)
 
     runspec = {
@@ -346,9 +329,9 @@ def main(argv: Sequence[str]) -> int:
         "datasets": dataset_list,
     }
 
-    if args.batch:
-        batch = create_batch(kive, args.batch)
-        runspec["batch"] = batch["url"]
+    if batch is not None:
+        kivebatch = create_batch(kive, batch)
+        runspec["batch"] = kivebatch["url"]
 
     logger.debug("Starting the run.")
     containerrun = kive.endpoints.containerruns.post(json=runspec)
@@ -356,7 +339,7 @@ def main(argv: Sequence[str]) -> int:
     logger.debug("Started at %r.", url)
 
     containerrun = await_containerrun(kive, containerrun)
-    download_results(kive, containerrun, args.output)
+    download_results(kive, containerrun, output)
 
     log_list = kive.get(containerrun["log_list"]).json()
     for log in log_list:
@@ -365,20 +348,52 @@ def main(argv: Sequence[str]) -> int:
 
         if log["type"] == "O":
             logger.debug("Displaying stdout now.")
-            kive.download_file(args.stdout, log["download_url"])
-            args.stdout.flush()
+            kive.download_file(stdout, log["download_url"])
+            stdout.flush()
             logger.debug("Done with stdout.")
 
         if log["type"] == "E":
             logger.debug("Displaying stderr now.")
-            kive.download_file(args.stderr, log["download_url"])
-            args.stderr.flush()
+            kive.download_file(stderr, log["download_url"])
+            stderr.flush()
             logger.debug("Done with stderr.")
 
     if containerrun["state"] == "C":
         return 0
     else:
         return 1
+
+
+def main_parsed(output: Optional[DirPath],
+                batch: Optional[str],
+                stdout: BinaryIO,
+                stderr: BinaryIO,
+                app_id: int,
+                inputs: Sequence[PathOrURL],
+                ) -> int:
+
+    kive = login()
+    return main_logged_in(kive=kive,
+                          output=output,
+                          batch=batch,
+                          stdout=stdout,
+                          stderr=stderr,
+                          app_id=app_id,
+                          inputs=inputs,
+                          )
+
+
+def main(argv: Sequence[str]) -> int:
+    parser = cli_parser()
+    args = parse_cli(parser, argv)
+    inputs = args.inputs or []
+    return main_parsed(output=args.output,
+                       batch=args.batch,
+                       stdout=args.stdout,
+                       stderr=args.stderr,
+                       app_id=args.app_id,
+                       inputs=inputs,
+                       )
 
 
 def cli() -> None:
