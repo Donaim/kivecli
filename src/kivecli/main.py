@@ -5,8 +5,11 @@ from typing import Sequence
 
 import kivecli.runkive as runkive
 import kivecli.zip as kiveclizip
+import kivecli.rerun as rerun
+from .usererror import UserError
+from .logger import logger
 
-PROGRAMS = ["run", "zip"]
+PROGRAMS = ["run", "zip", "rerun"]
 
 HELP_MESSAGE = """\
 usage: kivecli [-h] {programs} [arguments ...]
@@ -52,6 +55,8 @@ def main(argv: Sequence[str]) -> int:
         return runkive.main(arguments)
     elif program == "zip":
         return kiveclizip.main(arguments)
+    elif program == "rerun":
+        return rerun.main(arguments)
     else:
         raise RuntimeError(f"Unknown program value {repr(program)}")
 
@@ -59,10 +64,16 @@ def main(argv: Sequence[str]) -> int:
 def cli() -> None:
     try:
         rc = main(sys.argv[1:])
+        logger.debug("Done.")
     except BrokenPipeError:
+        logger.debug("Broken pipe.")
         rc = 1
     except KeyboardInterrupt:
+        logger.debug("Interrupted.")
         rc = 1
+    except UserError as e:
+        logger.fatal(e.fmt, *e.fmt_args)
+        rc = e.code
 
     sys.exit(rc)
 

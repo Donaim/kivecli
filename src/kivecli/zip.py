@@ -4,25 +4,11 @@ import os
 import zipfile
 import argparse
 import sys
-import logging
 from typing import BinaryIO, Sequence
 from pathlib import Path
 
-
-# Set up the logger
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-logger = logging.getLogger(__name__)
-
-
-class UserError(RuntimeError):
-    def __init__(self, fmt: str, *fmt_args: object):
-        self.fmt = fmt
-        self.fmt_args = fmt_args
-        self.code = 1
+from .usererror import UserError
+from .logger import logger
 
 
 def zip_directory_to_stream(directory_path: str,

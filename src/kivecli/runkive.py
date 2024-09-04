@@ -5,28 +5,21 @@ import sys
 import os
 import logging
 import hashlib
-from typing import cast, Sequence, BinaryIO, Dict, Iterable, Optional
+from typing import cast, Sequence, BinaryIO, Dict, Iterable, Optional, \
+    Union, TypeAlias, NewType, NoReturn
 from pathlib import Path
+from urllib.parse import urlparse
 import time
 
 import kiveapi
 from kiveapi.dataset import Dataset
 
-
-# Set up the logger
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-logger = logging.getLogger(__name__)
+from kivecli.usererror import UserError
+from .logger import logger
 
 
-class UserError(RuntimeError):
-    def __init__(self, fmt: str, *fmt_args: object):
-        self.fmt = fmt
-        self.fmt_args = fmt_args
-        self.code = 1
+URL = NewType('URL', str)
+PathOrURL: TypeAlias = Union[Path, URL]
 
 
 def dir_path(string: str) -> Path:
@@ -34,6 +27,40 @@ def dir_path(string: str) -> Path:
         return Path(string)
     else:
         raise UserError("Path %r is not a directory.", string)
+
+
+def url_argument(string: str) -> URL:
+    try:
+        parsed = urlparse(string)
+    except Exception:
+        raise UserError("Argument %r is not a URL.", string)
+
+    #
+    # A URL is considered valid if it has both a scheme and a netloc.
+    #
+
+    if not parsed.scheme:
+        raise UserError("Argument %r is missing a scheme to be a URL.", string)
+
+    if not parsed.netloc:
+        raise UserError("Argument %r is missing a netloc to be a URL.", string)
+
+    return URL(string)
+
+
+def input_file_or_url(string: str) -> PathOrURL:
+    factory = argparse.FileType('r')
+    try:
+        with factory(string):
+            pass
+        return Path(string)
+    except Exception as e1:
+        try:
+            return url_argument(string)
+        except Exception as e2:
+            raise UserError("Argument %r is neither"
+                            " an input file (%s) nor a URL (%s).",
+                            string, e1, e2)
 
 
 def cli_parser() -> argparse.ArgumentParser:
@@ -65,13 +92,13 @@ def cli_parser() -> argparse.ArgumentParser:
     verbosity_group.add_argument('--quiet', action='store_true',
                                  help='Minimize output verbosity.')
 
-    parser.add_argument("script", type=argparse.FileType('r'),
+    parser.add_argument("script", type=input_file_or_url,
                         help="Path to the script to be run.")
 
     parser.add_argument("inputs",
                         nargs="*",
-                        type=argparse.FileType('r'),
-                        help="Path to the input files"
+                        type=input_file_or_url,
+                        help="Path or URLs to the input files"
                         " which are passed as arguments to script.")
 
     return parser
@@ -182,7 +209,7 @@ def find_kive_containerapp(kive: kiveapi.KiveAPI,
 
 def upload_or_retrieve_dataset(session: kiveapi.KiveAPI,
                                name: str,
-                               inputpath: Path,
+                               inputpath: PathOrURL,
                                users: Optional[Sequence[str]] = None,
                                groups: Optional[Sequence[str]] = None) \
                                -> Optional[Dataset]:
@@ -191,11 +218,20 @@ def upload_or_retrieve_dataset(session: kiveapi.KiveAPI,
     if users is None and groups is None:
         raise ValueError("A list of users or a list of groups is required.")
 
-    with open(inputpath, "rb") as inputfile:
-        found = find_kive_dataset(session, inputfile, name)
-        if found:
-            logger.debug("Found existing dataset for %r.", name)
-            return Dataset(found, session)
+    if isinstance(inputpath, Path):
+        with open(inputpath, "rb") as inputfile:
+            found = find_kive_dataset(session, inputfile, name)
+    elif isinstance(inputpath, str):
+        found = session.get(inputpath).json()
+    else:
+        _x: NoReturn = inputpath
+        assert _x
+
+    if found:
+        logger.debug("Found existing dataset for %r.", name)
+        return Dataset(found, session)
+    elif isinstance(inputpath, str):
+        return None
 
     try:
         with open(inputpath, "rb") as inputfile:
@@ -269,17 +305,18 @@ def await_containerrun(session: kiveapi.KiveAPI,
 
 
 def get_input_datasets(kive: kiveapi.KiveAPI,
-                       script: Path,
-                       inputs: Iterable[Path]) \
+                       script: PathOrURL,
+                       inputs: Iterable[PathOrURL]) \
         -> Iterable[Dataset]:
 
     for arg in ([script] + list(inputs)):
+        if isinstance(arg, Path):
+            name = arg.name
+        else:
+            name = arg
+
         dataset = upload_or_retrieve_dataset(
-            kive,
-            os.path.basename(arg),
-            arg,
-            groups=ALLOWED_GROUPS,
-        )
+            kive, name, arg, groups=ALLOWED_GROUPS)
 
         assert dataset is not None, "Expected a dataset."
         yield dataset
@@ -310,8 +347,7 @@ def main(argv: Sequence[str]) -> int:
     if password is None:
         raise UserError("Must set $MICALL_KIVE_PASSWORD environment variable.")
 
-    inputs_args = args.inputs or []
-    inputs = [arg.name for arg in inputs_args]
+    inputs = args.inputs or []
 
     kive = kiveapi.KiveAPI(server)
     try:
@@ -324,8 +360,6 @@ def main(argv: Sequence[str]) -> int:
     if args.output is not None:
         logger.debug("Making output directory at %r.", str(args.output))
         os.makedirs(args.output, exist_ok=True)
-
-    inputpath = Path(args.script.name)
 
     # Get the app from a container family.
     app = find_kive_containerapp(kive, str(args.app_id))
@@ -350,7 +384,9 @@ def main(argv: Sequence[str]) -> int:
                      filename, kive_name)
 
     appargs_urls = [x["url"] for x in input_appargs]
-    input_datasets = list(get_input_datasets(kive, inputpath, inputs))
+    input_datasets = list(get_input_datasets(kive, args.script, inputs))
+    scriptname = input_datasets[0].raw["name"]
+
     datasets_urls = [x.raw["url"] for x in input_datasets]
     dataset_list = [
         {
@@ -365,7 +401,7 @@ def main(argv: Sequence[str]) -> int:
         logger.debug("Input %r has MD5 hash %s.", name, checksum)
 
     runspec = {
-        "name": f"Free {inputpath.name}",
+        "name": f"Free {scriptname}",
         "app": app["url"],
         "groups_allowed": ALLOWED_GROUPS,
         "datasets": dataset_list,
@@ -389,12 +425,16 @@ def main(argv: Sequence[str]) -> int:
             continue
 
         if log["type"] == "O":
+            logger.debug("Displaying stdout now.")
             kive.download_file(args.stdout, log["download_url"])
             args.stdout.flush()
+            logger.debug("Done with stdout.")
 
         if log["type"] == "E":
+            logger.debug("Displaying stderr now.")
             kive.download_file(args.stderr, log["download_url"])
             args.stderr.flush()
+            logger.debug("Done with stderr.")
 
     if containerrun["state"] == "C":
         return 0
