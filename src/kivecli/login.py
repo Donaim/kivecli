@@ -17,6 +17,7 @@ def login() -> Iterator[kiveapi.KiveAPI]:
     existing = session.get(None)
     if existing is not None:
         yield existing
+        return
 
     ctx = login_try()
     token = session.set(ctx)

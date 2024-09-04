@@ -2,12 +2,11 @@
 
 import argparse
 import sys
-from typing import Sequence, Iterator
+from typing import Sequence, Iterator, List
 
 import kiveapi
 
 import kivecli.runkive as runkive
-# from .usererror import UserError
 from .logger import logger
 from .pathorurl import PathOrURL
 from .url import URL
@@ -77,13 +76,11 @@ def main(argv: Sequence[str]) -> int:
     args = parse_cli(parser, argv)
 
     with login() as kive:
-        prefix: Sequence[PathOrURL] = args.prefix
-        assert prefix or not prefix
+        urls = list(collect_run_inputs(kive, run_id=args.run_id))
+        logger.debug("Collected %s datasets.", len(urls))
 
-        urls = list(collect_run_inputs(kive, args.app_id))
-        assert urls
-
-        logger.debug("Got datasets: %s", urls)
+        prefix: List[PathOrURL] = args.prefix or []
+        inputs = prefix + urls
 
         return runkive.main_parsed(
             output=args.output,
@@ -91,7 +88,7 @@ def main(argv: Sequence[str]) -> int:
             stdout=args.stdout,
             stderr=args.stderr,
             app_id=args.app_id,
-            inputs=urls,
+            inputs=inputs,
         )
 
 
