@@ -15,7 +15,7 @@ Use Kive via CLI.
 
 positional arguments:
   {programs} Program to run.
-  arguments   Arguments to the script.
+  arguments Arguments to the script.
 
 options:
   -h, --help  show this help message and exit
