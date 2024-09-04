@@ -377,9 +377,12 @@ def main(argv: Sequence[str]) -> int:
         raise UserError("At most %r inputs supported, but got %r.",
                         len(input_appargs), len(inputs))
 
-    for (x, y) in zip(input_appargs, inputs):
+    for (x, y) in zip(input_appargs, [args.script] + inputs):
         kive_name = x["name"]
-        filename = os.path.basename(y)
+        if isinstance(y, Path):
+            filename = y.name
+        else:
+            filename = y
         logger.debug("File name %r corresponds to Kive argument name %r.",
                      filename, kive_name)
 
