@@ -21,7 +21,7 @@ from .parsecli import parse_cli
 
 
 def cli_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Run a script on Kive.")
+    parser = argparse.ArgumentParser(description="Run a Kive app.")
 
     parser.add_argument("--output", type=dir_path,
                         help="Output folder where results are downloaded."
@@ -38,15 +38,10 @@ def cli_parser() -> argparse.ArgumentParser:
                         help="Redirected stderr to file.")
     parser.add_argument("--app_id", type=int, required=True,
                         help="App id of the target pipeline.")
-
-    parser.add_argument("script", type=input_file_or_url,
-                        help="Path to the script to be run.")
-
     parser.add_argument("inputs",
-                        nargs="*",
+                        nargs="+",
                         type=input_file_or_url,
-                        help="Path or URLs to the input files"
-                        " which are passed as arguments to script.")
+                        help="Path or URLs of the input files.")
 
     return parser
 
@@ -252,11 +247,10 @@ def await_containerrun(session: kiveapi.KiveAPI,
 
 
 def get_input_datasets(kive: kiveapi.KiveAPI,
-                       script: PathOrURL,
                        inputs: Iterable[PathOrURL]) \
         -> Iterable[Dataset]:
 
-    for arg in ([script] + list(inputs)):
+    for arg in inputs:
         if isinstance(arg, Path):
             name = arg.name
         else:
@@ -312,14 +306,14 @@ def main(argv: Sequence[str]) -> int:
     appid = app['id']
     appargs = kive.endpoints.containerapps.get(f"{appid}/argument_list")
     input_appargs = [x for x in appargs if x["type"] == "I"]
-    if len(inputs) + 1 > len(input_appargs):
+    if len(inputs) > len(input_appargs):
         raise UserError("At most %r inputs supported, but got %r.",
                         len(input_appargs), len(inputs))
-    if len(inputs) + 1 < len(input_appargs):
+    if len(inputs) < len(input_appargs):
         raise UserError("At least %r inputs supported, but got %r.",
                         len(input_appargs), len(inputs))
 
-    for (x, y) in zip(input_appargs, [args.script] + inputs):
+    for (x, y) in zip(input_appargs, inputs):
         kive_name = x["name"]
         if isinstance(y, Path):
             filename = y.name
@@ -329,7 +323,7 @@ def main(argv: Sequence[str]) -> int:
                      filename, kive_name)
 
     appargs_urls = [x["url"] for x in input_appargs]
-    input_datasets = list(get_input_datasets(kive, args.script, inputs))
+    input_datasets = list(get_input_datasets(kive, inputs))
     scriptname = input_datasets[0].raw["name"]
 
     datasets_urls = [x.raw["url"] for x in input_datasets]
