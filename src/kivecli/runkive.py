@@ -315,7 +315,6 @@ def main_logged_in(kive: kiveapi.KiveAPI,
 
     appargs_urls = [x["url"] for x in input_appargs]
     input_datasets = list(get_input_datasets(kive, inputs))
-    scriptname = input_datasets[0].raw["name"]
 
     datasets_urls = [x.raw["url"] for x in input_datasets]
     dataset_list = [
@@ -330,7 +329,7 @@ def main_logged_in(kive: kiveapi.KiveAPI,
         checksum = dataset.raw['MD5_checksum']
         logger.debug("Input %s has MD5 hash %s.", escape(name), checksum)
 
-    run_name_top = run_name if run_name is not None else f'Free {scriptname!r}'
+    run_name_top = run_name if run_name is not None else 'A kivecli run'
     runspec = {
         "name": run_name_top,
         "app": app["url"],
