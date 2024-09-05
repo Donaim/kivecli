@@ -173,7 +173,9 @@ def upload_or_retrieve_dataset(session: kiveapi.KiveAPI,
         assert _x
 
     if found:
-        logger.debug("Found existing dataset for %r.", name)
+        url = found['url']
+        logger.debug("Found existing dataset for %r at %r.",
+                     name, url)
         return Dataset(found, session)
     elif isinstance(inputpath, str):
         return None
