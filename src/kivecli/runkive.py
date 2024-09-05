@@ -4,7 +4,8 @@ import argparse
 import sys
 import os
 import hashlib
-from typing import cast, Sequence, BinaryIO, Dict, Iterable, Optional, NoReturn
+from typing import cast, Sequence, BinaryIO, Dict, Iterable, Optional, \
+    NoReturn, Union
 from pathlib import Path
 import time
 
@@ -19,6 +20,8 @@ from .inputfileorurl import input_file_or_url
 from .mainwrap import mainwrap
 from .parsecli import parse_cli
 from .login import login
+from .url import URL
+from .escape import escape
 
 
 def cli_parser() -> argparse.ArgumentParser:
@@ -63,16 +66,17 @@ def download_results(kive: kiveapi.KiveAPI,
             dataset = kive.get(run_dataset["dataset"]).json()
             checksum = dataset['MD5_checksum']
             name = run_dataset['argument_name']
-            logger.debug("Output %r has MD5 hash %s.", name, checksum)
-            filename = dataset["name"]
-            logger.debug("File name %r corresponds to Kive argument name %r.",
-                         filename, name)
+            logger.debug("Output %s has MD5 hash %s.", escape(name), checksum)
+            filename: str = dataset["name"]
+            logger.debug("File %s corresponds to Kive argument name %s.",
+                         escape(filename), escape(name))
 
             if output is None:
                 continue
 
             filepath = output / filename
-            logger.debug("Downloading %r to %r.", filename, str(filepath))
+            logger.debug("Downloading %s to %s.",
+                         escape(filename), escape(filepath))
             with open(filepath, "wb") as outf:
                 kive.download_file(outf, dataset["download_url"])
 
@@ -101,9 +105,9 @@ def create_batch(kive: kiveapi.KiveAPI, name: str) -> Dict[str, object]:
             name=name,
             description=description,
             groups_allowed=ALLOWED_GROUPS))
-        logger.debug("Created new batch named %r.", name)
+        logger.debug("Created new batch named %s.", escape(name))
     else:
-        logger.debug("Found existing batch named %r.", name)
+        logger.debug("Found existing batch named %s.", escape(name))
 
     return batch
 
@@ -166,18 +170,18 @@ def upload_or_retrieve_dataset(session: kiveapi.KiveAPI,
     if isinstance(inputpath, Path):
         with open(inputpath, "rb") as inputfile:
             found = find_kive_dataset(session, inputfile, name)
-    elif isinstance(inputpath, str):
-        found = session.get(inputpath).json()
+    elif isinstance(inputpath, URL):
+        found = session.get(inputpath.value).json()
     else:
         _x: NoReturn = inputpath
         assert _x
 
     if found:
-        url = found['url']
-        logger.debug("Found existing dataset for %r at %r.",
-                     name, url)
+        url = URL(str(found['url']))
+        logger.debug("Found existing dataset for %s at %s.",
+                     escape(name), escape(url))
         return Dataset(found, session)
-    elif isinstance(inputpath, str):
+    elif isinstance(inputpath, URL):
         return None
 
     try:
@@ -185,13 +189,13 @@ def upload_or_retrieve_dataset(session: kiveapi.KiveAPI,
             dataset = session.add_dataset(name, 'None',
                                           inputfile, None,
                                           users, groups)
-            logger.debug("Uploaded new dataset for %r.", name)
+            logger.debug("Uploaded new dataset for %s.", escape(name))
             return dataset
 
     except kiveapi.KiveMalformedDataException:
         dataset = session.find_dataset(name=name)[0]
         if dataset is not None:
-            logger.debug("Found existing dataset for %r.", name)
+            logger.debug("Found existing dataset for %s.", escape(name))
             return dataset
 
     return None
@@ -214,7 +218,7 @@ def await_containerrun(session: kiveapi.KiveAPI,
     elapsed = 0.0
 
     runid = containerrun["id"]
-    logger.debug("Waiting for run %r to finish.", runid)
+    logger.debug("Waiting for run %s to finish.", runid)
 
     last_state: str = ""
     while elapsed < MAX_WAIT:
@@ -228,7 +232,7 @@ def await_containerrun(session: kiveapi.KiveAPI,
 
         if state != last_state:
             last_state = state
-            logger.debug("Run %r in state %s after %s seconds elapsed.",
+            logger.debug("Run %s in state %s after %s seconds elapsed.",
                          runid, state, elapsed)
 
         if state in ACTIVE_STATES:
@@ -259,12 +263,12 @@ def get_input_datasets(kive: kiveapi.KiveAPI,
         if isinstance(arg, Path):
             name = arg.name
         else:
-            name = arg
+            name = arg.value
 
-        dataset = upload_or_retrieve_dataset(
-            kive, name, arg, groups=ALLOWED_GROUPS)
+        dataset = upload_or_retrieve_dataset(kive, name, arg, ALLOWED_GROUPS)
+        if dataset is None:
+            raise UserError("Could not find dataset for %s.", escape(arg))
 
-        assert dataset is not None, "Expected a dataset."
         yield dataset
 
 
@@ -279,36 +283,36 @@ def main_logged_in(kive: kiveapi.KiveAPI,
                    ) -> int:
 
     if output is not None:
-        logger.debug("Making output directory at %r.", str(output))
+        logger.debug("Making output directory at %s.", escape(output))
         os.makedirs(output, exist_ok=True)
 
     # Get the app from a container family.
     app = find_kive_containerapp(kive, str(app_id))
-    app_link = kive.server_url + app["absolute_url"]
-    app_name = app["name"]
-    app_container = app["container_name"]
-    logger.debug("Using app %r.", app_link)
-    logger.debug("App name is %r.", app_name)
-    logger.debug("App container is %r.", app_container)
+    app_link = URL(kive.server_url + app["absolute_url"])
+    app_name: str = str(app["name"])
+    app_container: str = str(app["container_name"])
+    logger.debug("Using app %s.", escape(app_link))
+    logger.debug("App name is %s.", escape(app_name))
+    logger.debug("App container is %s.", escape(app_container))
 
     appid = app['id']
     appargs = kive.endpoints.containerapps.get(f"{appid}/argument_list")
     input_appargs = [x for x in appargs if x["type"] == "I"]
     if len(inputs) > len(input_appargs):
-        raise UserError("At most %r inputs supported, but got %r.",
+        raise UserError("At most %s inputs supported, but got %s.",
                         len(input_appargs), len(inputs))
     if len(inputs) < len(input_appargs):
-        raise UserError("At least %r inputs supported, but got %r.",
+        raise UserError("At least %s inputs supported, but got %s.",
                         len(input_appargs), len(inputs))
 
     for (x, y) in zip(input_appargs, inputs):
-        kive_name = x["name"]
+        kive_name: str = x["name"]
         if isinstance(y, Path):
-            filename = y.name
+            filename: Union[str, URL] = y.name
         else:
             filename = y
-        logger.debug("File name %r corresponds to Kive argument name %r.",
-                     filename, kive_name)
+        logger.debug("File %s corresponds to Kive argument name %s.",
+                     escape(filename), escape(kive_name))
 
     appargs_urls = [x["url"] for x in input_appargs]
     input_datasets = list(get_input_datasets(kive, inputs))
@@ -323,9 +327,9 @@ def main_logged_in(kive: kiveapi.KiveAPI,
     ]
 
     for (apparg, dataset) in zip(input_appargs, input_datasets):
-        name = apparg["name"]
+        name: str = apparg["name"]
         checksum = dataset.raw['MD5_checksum']
-        logger.debug("Input %r has MD5 hash %s.", name, checksum)
+        logger.debug("Input %s has MD5 hash %s.", escape(name), checksum)
 
     runspec = {
         "name": f"Free {scriptname}",
@@ -341,7 +345,7 @@ def main_logged_in(kive: kiveapi.KiveAPI,
     logger.debug("Starting the run.")
     containerrun = kive.endpoints.containerruns.post(json=runspec)
     url = kive.server_url + containerrun["absolute_url"]
-    logger.debug("Started at %r.", url)
+    logger.debug("Started at %s.", escape(url))
 
     if nowait:
         return 0
