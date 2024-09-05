@@ -8,6 +8,8 @@ import kiveapi
 
 from .usererror import UserError
 from .logger import logger
+from .escape import escape
+from .url import URL
 
 session: ContextVar[kiveapi.KiveAPI] = ContextVar("KiveSession")
 
@@ -39,12 +41,14 @@ def login_try() -> kiveapi.KiveAPI:
     if password is None:
         raise UserError("Must set $MICALL_KIVE_PASSWORD environment variable.")
 
-    kive = kiveapi.KiveAPI(server)
+    serverurl = URL(server)
+    kive = kiveapi.KiveAPI(serverurl.value)
     try:
         kive.login(user, password)
     except kiveapi.KiveAuthException as e:
         raise UserError("Login failed: %s", str(e))
 
-    logger.debug("Logged in as %r on server %r.", user, server)
+    logger.debug("Logged in as %s on server %s.",
+                 escape(user), escape(serverurl))
 
     return kive
