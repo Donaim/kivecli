@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from typing import Sequence, Iterator, List
+from typing import Sequence, Iterator, List, Dict
 
 import kiveapi
 
@@ -19,10 +19,15 @@ from .login import login
 from .escape import escape
 
 
-def collect_run_inputs(kive: kiveapi.KiveAPI, run_id: int) -> Iterator[URL]:
-    containerrun = kive.endpoints.containerruns.get(run_id)
-    logger.debug("Found run with id %s at %s.",
-                 run_id, escape(URL(containerrun["url"])))
+def find_run(kive: kiveapi.KiveAPI, run_id: int) -> Dict[str, object]:
+    containerrun: Dict[str, object] = kive.endpoints.containerruns.get(run_id)
+    url: str = str(containerrun["url"])
+    logger.debug("Found run with id %s at %s.", run_id, escape(URL(url)))
+    return containerrun
+
+
+def collect_run_inputs(kive: kiveapi.KiveAPI,
+                       containerrun: Dict[str, object]) -> Iterator[URL]:
 
     run_datasets = kive.get(containerrun["dataset_list"]).json()
     for run_dataset in run_datasets:
@@ -80,7 +85,11 @@ def main(argv: Sequence[str]) -> int:
     args = parse_cli(parser, argv)
 
     with login() as kive:
-        urls = list(collect_run_inputs(kive, run_id=args.run_id))
+        containerrun = find_run(kive, args.run_id)
+        orig_run_name = str(containerrun["name"])
+        run_name = f'Rerun {orig_run_name!r}'
+
+        urls = list(collect_run_inputs(kive, containerrun))
         logger.debug("Collected %s datasets.", len(urls))
 
         prefix: List[PathOrURL] = args.prefix or []
@@ -89,6 +98,7 @@ def main(argv: Sequence[str]) -> int:
         return runkive.main_parsed(
             output=args.output,
             batch=args.batch,
+            run_name=run_name,
             stdout=args.stdout,
             stderr=args.stderr,
             app_id=args.app_id,

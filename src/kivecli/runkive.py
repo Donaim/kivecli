@@ -34,6 +34,7 @@ def cli_parser() -> argparse.ArgumentParser:
     parser.add_argument("--nowait", action='store_true', default=False,
                         help="Do not wait until the run is finished.")
     parser.add_argument("--batch", help="Unique name for the batch.")
+    parser.add_argument("--run_name", help="A name for the run.")
     parser.add_argument("--stdout",
                         default=sys.stdout.buffer,
                         type=argparse.FileType('wb'),
@@ -272,6 +273,7 @@ def get_input_datasets(kive: kiveapi.KiveAPI,
 def main_logged_in(kive: kiveapi.KiveAPI,
                    output: Optional[DirPath],
                    batch: Optional[str],
+                   run_name: Optional[str],
                    stdout: BinaryIO,
                    stderr: BinaryIO,
                    app_id: int,
@@ -328,8 +330,9 @@ def main_logged_in(kive: kiveapi.KiveAPI,
         checksum = dataset.raw['MD5_checksum']
         logger.debug("Input %s has MD5 hash %s.", escape(name), checksum)
 
+    run_name_top = run_name if run_name is not None else f'Free {scriptname!r}'
     runspec = {
-        "name": f"Free {scriptname}",
+        "name": run_name_top,
         "app": app["url"],
         "groups_allowed": ALLOWED_GROUPS,
         "datasets": dataset_list,
@@ -376,6 +379,7 @@ def main_logged_in(kive: kiveapi.KiveAPI,
 
 def main_parsed(output: Optional[DirPath],
                 batch: Optional[str],
+                run_name: Optional[str],
                 stdout: BinaryIO,
                 stderr: BinaryIO,
                 app_id: int,
@@ -387,6 +391,7 @@ def main_parsed(output: Optional[DirPath],
         return main_logged_in(kive=kive,
                               output=output,
                               batch=batch,
+                              run_name=run_name,
                               stdout=stdout,
                               stderr=stderr,
                               app_id=app_id,
@@ -401,6 +406,7 @@ def main(argv: Sequence[str]) -> int:
     inputs = args.inputs or []
     return main_parsed(output=args.output,
                        batch=args.batch,
+                       run_name=args.run_name,
                        stdout=args.stdout,
                        stderr=args.stderr,
                        app_id=args.app_id,
