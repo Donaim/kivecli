@@ -37,7 +37,7 @@ def collect_run_inputs(kive: kiveapi.KiveAPI,
             name = str(run_dataset['argument_name'])
             logger.debug("Input %s has MD5 hash %s.", escape(name), checksum)
             filename = str(dataset["name"])
-            logger.debug("File name %s corresponds to Kive argument name %s.",
+            logger.debug("File %s corresponds to Kive argument name %s.",
                          escape(filename), escape(name))
 
             url_string: str = run_dataset["dataset"]
