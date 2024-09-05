@@ -58,7 +58,7 @@ ALLOWED_GROUPS = ['Everyone']
 
 def download_results(kive: kiveapi.KiveAPI,
                      containerrun: Dict[str, object],
-                     output: Optional[Path]) -> None:
+                     output: Optional[DirPath]) -> None:
     # Retrieve outputs and save to files.
 
     run_datasets = kive.get(containerrun["dataset_list"]).json()
