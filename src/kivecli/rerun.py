@@ -35,10 +35,13 @@ def collect_run_inputs(kive: kiveapi.KiveAPI,
             dataset = kive.get(run_dataset["dataset"]).json()
             checksum = dataset['MD5_checksum']
             name = str(run_dataset['argument_name'])
-            logger.debug("Input %s has MD5 hash %s.", escape(name), checksum)
+            logger.debug("Found dataset at %s for %s.",
+                         escape(URL(str(dataset["url"]))),
+                         escape(str(dataset["name"])))
             filename = str(dataset["name"])
             logger.debug("File %s corresponds to Kive argument name %s.",
                          escape(filename), escape(name))
+            logger.debug("Input %s has MD5 hash %s.", escape(name), checksum)
 
             url_string: str = run_dataset["dataset"]
             url = url_argument(url_string)
