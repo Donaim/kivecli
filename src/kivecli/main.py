@@ -36,7 +36,7 @@ kivecli: error: the following arguments are required: program, arguments
 
 
 def main(argv: Sequence[str]) -> int:
-    if len(argv) <= 1:
+    if len(argv) < 1:
         print(PROGRAM_MISSING_MESSAGE, file=sys.stderr, end='')
         return 1
 
