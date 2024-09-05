@@ -121,20 +121,17 @@ def calculate_md5_hash(source_file: BinaryIO) -> str:
 
 
 def find_kive_dataset(self: kiveapi.KiveAPI,
-                      source_file: BinaryIO,
-                      dataset_name: str) \
+                      source_file: BinaryIO) \
                       -> Optional[Dict[str, object]]:
     """
     Search for a dataset in Kive by name and checksum.
 
     :param source_file: open file object to read from
-    :param str dataset_name: dataset name to search for
     :return: the dataset object from the Kive API wrapper, or None
     """
 
     checksum = calculate_md5_hash(source_file)
     datasets = self.endpoints.datasets.filter(
-        # 'name', dataset_name, # check the name match.
         'md5', checksum,
         'uploaded', True)
 
@@ -157,7 +154,7 @@ def find_kive_containerapp(kive: kiveapi.KiveAPI,
 
 
 def upload_or_retrieve_dataset(session: kiveapi.KiveAPI,
-                               name: str,
+                               name: Union[str, URL],
                                inputpath: PathOrURL,
                                users: Optional[Sequence[str]] = None,
                                groups: Optional[Sequence[str]] = None) \
@@ -169,7 +166,7 @@ def upload_or_retrieve_dataset(session: kiveapi.KiveAPI,
 
     if isinstance(inputpath, Path):
         with open(inputpath, "rb") as inputfile:
-            found = find_kive_dataset(session, inputfile, name)
+            found = find_kive_dataset(session, inputfile)
     elif isinstance(inputpath, URL):
         found = session.get(inputpath.value).json()
     else:
@@ -261,9 +258,9 @@ def get_input_datasets(kive: kiveapi.KiveAPI,
 
     for arg in inputs:
         if isinstance(arg, Path):
-            name = arg.name
+            name: Union[str, URL] = arg.name
         else:
-            name = arg.value
+            name = arg
 
         dataset = upload_or_retrieve_dataset(kive, name, arg, ALLOWED_GROUPS)
         if dataset is None:
