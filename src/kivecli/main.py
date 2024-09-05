@@ -24,13 +24,13 @@ options:
 """.format(programs='{' + ','.join(PROGRAMS) + '}')
 
 PROGRAM_ERROR_MESSAGE = """\
-usage: main.py [-h] {programs} [arguments ...]
-main.py: error: argument program: invalid choice: 'hello' (choose from {lst})
+usage: kivecli [-h] {programs} [arguments ...]
+kivecli: error: argument program: invalid choice: 'hello' (choose from {lst})
 """.format(programs='{' + ','.join(PROGRAMS) + '}',
            lst=', '.join(map(repr, PROGRAMS)))
 
 PROGRAM_MISSING_MESSAGE = """\
-usage: main.py [-h] {programs} [arguments ...]
+usage: kivecli [-h] {programs} [arguments ...]
 kivecli: error: the following arguments are required: program, arguments
 """.format(programs='{' + ','.join(PROGRAMS) + '}')
 
