@@ -162,6 +162,22 @@ def upload_or_retrieve_dataset(session: kiveapi.KiveAPI,
                                -> Optional[Dataset]:
     """Create a dataset by uploading a file to Kive."""
 
+    def report_found(dataset: Dataset) -> None:
+        url = URL(str(dataset.raw['url']))
+        printname = str(dataset.raw['name'])
+
+        if isinstance(name, str):
+            logger.debug("Found existing dataset for %s at %s.",
+                         escape(name), escape(url))
+
+        elif isinstance(name, URL):
+            logger.debug("Found existing dataset at %s for %s.",
+                         escape(url), escape(printname))
+
+        else:
+            x: NoReturn = name
+            assert x
+
     if users is None and groups is None:
         raise ValueError("A list of users or a list of groups is required.")
 
@@ -171,29 +187,35 @@ def upload_or_retrieve_dataset(session: kiveapi.KiveAPI,
     elif isinstance(inputpath, URL):
         found = session.get(inputpath.value).json()
     else:
-        _x: NoReturn = inputpath
-        assert _x
+        x: NoReturn = inputpath
+        assert x
 
     if found:
-        url = URL(str(found['url']))
-        logger.debug("Found existing dataset for %s at %s.",
-                     escape(name), escape(url))
-        return Dataset(found, session)
+        dataset = Dataset(found, session)
+        report_found(dataset)
+        return dataset
     elif isinstance(inputpath, URL):
         return None
 
     try:
         with open(inputpath, "rb") as inputfile:
-            dataset = session.add_dataset(name, 'None',
-                                          inputfile, None,
-                                          users, groups)
-            logger.debug("Uploaded new dataset for %s.", escape(name))
+            dataset = session.add_dataset(name=name,
+                                          description='None',
+                                          handle=inputfile,
+                                          cdt=None,
+                                          users=users,
+                                          groups=groups)
+            url = URL(str(dataset.raw["url"]))
+            logger.debug("Uploaded new dataset for %s at %s.",
+                         escape(name), escape(url))
             return dataset
 
-    except kiveapi.KiveMalformedDataException:
+    except kiveapi.KiveMalformedDataException as e:
+        logger.warning("Upload of %s failed: %s", escape(inputpath), e)
+
         dataset = session.find_dataset(name=name)[0]
         if dataset is not None:
-            logger.debug("Found existing dataset for %s.", escape(name))
+            report_found(dataset)
             return dataset
 
     return None
@@ -263,7 +285,9 @@ def get_input_datasets(kive: kiveapi.KiveAPI,
         else:
             name = arg
 
-        dataset = upload_or_retrieve_dataset(kive, name, arg, ALLOWED_GROUPS)
+        dataset = upload_or_retrieve_dataset(kive, name, arg,
+                                             users=None,
+                                             groups=ALLOWED_GROUPS)
         if dataset is None:
             raise UserError("Could not find dataset for %s.", escape(arg))
 
