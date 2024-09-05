@@ -16,22 +16,24 @@ from .urlargument import url_argument
 from .mainwrap import mainwrap
 from .parsecli import parse_cli
 from .login import login
+from .escape import escape
 
 
 def collect_run_inputs(kive: kiveapi.KiveAPI, run_id: int) -> Iterator[URL]:
     containerrun = kive.endpoints.containerruns.get(run_id)
-    logger.debug("Found run with id %s at %r.", run_id, containerrun["url"])
+    logger.debug("Found run with id %s at %s.",
+                 run_id, escape(URL(containerrun["url"])))
 
     run_datasets = kive.get(containerrun["dataset_list"]).json()
     for run_dataset in run_datasets:
         if run_dataset.get("argument_type") == "I":
             dataset = kive.get(run_dataset["dataset"]).json()
             checksum = dataset['MD5_checksum']
-            name = run_dataset['argument_name']
-            logger.debug("Input %r has MD5 hash %s.", name, checksum)
-            filename = dataset["name"]
-            logger.debug("File name %r corresponds to Kive argument name %r.",
-                         filename, name)
+            name = str(run_dataset['argument_name'])
+            logger.debug("Input %s has MD5 hash %s.", escape(name), checksum)
+            filename = str(dataset["name"])
+            logger.debug("File name %s corresponds to Kive argument name %s.",
+                         escape(filename), escape(name))
 
             url_string: str = run_dataset["dataset"]
             url = url_argument(url_string)

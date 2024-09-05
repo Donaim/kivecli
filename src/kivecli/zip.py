@@ -5,10 +5,9 @@ import zipfile
 import argparse
 import sys
 from typing import BinaryIO, Sequence
-from pathlib import Path
 
-from .usererror import UserError
 from .mainwrap import mainwrap
+from .dirpath import dir_path
 
 
 def zip_directory_to_stream(directory_path: str,
@@ -31,13 +30,6 @@ def zip_directory_to_stream(directory_path: str,
                 # Names arcname makes sure to maintain the directory structure.
                 arcname = os.path.relpath(file_path, directory_path)
                 zip_file.write(file_path, arcname)
-
-
-def dir_path(string: str) -> Path:
-    if (not os.path.exists(string)) or os.path.isdir(string):
-        return Path(string)
-    else:
-        raise UserError("Path %r is not a directory.", string)
 
 
 def main(argv: Sequence[str]) -> int:
