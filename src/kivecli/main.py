@@ -6,9 +6,10 @@ from typing import Sequence
 import kivecli.runkive as runkive
 import kivecli.zip as kiveclizip
 import kivecli.rerun as rerun
+import kivecli.createzipapp as createzipapp
 from .mainwrap import mainwrap
 
-PROGRAMS = ["run", "zip", "rerun"]
+PROGRAMS = ["run", "zip", "rerun", "createzipapp"]
 
 HELP_MESSAGE = """\
 usage: kivecli [-h] {programs} [arguments ...]
@@ -56,6 +57,8 @@ def main(argv: Sequence[str]) -> int:
         return kiveclizip.main(arguments)
     elif program == "rerun":
         return rerun.main(arguments)
+    elif program == "createzipapp":
+        return createzipapp.main(arguments)
     else:
         raise RuntimeError(f"Unknown program value {repr(program)}")
 
