@@ -10,7 +10,7 @@ import kivecli.createzipapp as createzipapp
 import kivecli.download as kivedownload
 from .mainwrap import mainwrap
 
-PROGRAMS = ["run", "zip", "rerun", "createzipapp", "download"]
+PROGRAMS = ["run", "rerun", "download", "createzipapp", "zip"]
 
 HELP_MESSAGE = """\
 usage: kivecli [-h] {programs} [arguments ...]
