@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 import argparse
+import os
 from typing import Sequence, Dict, Iterable, Iterator, Mapping
 import time
 
@@ -14,6 +15,7 @@ from .login import login
 from .findrun import find_run
 from .collect_run_files import collect_run_files
 from .dataset import Dataset
+from .escape import escape
 
 
 def cli_parser() -> argparse.ArgumentParser:
@@ -41,6 +43,10 @@ def collect_run_outputs(kive: kiveapi.KiveAPI,
 
 def download_results(datasets: Iterable[Dataset],
                      output: DirPath) -> None:
+    if output is not None:
+        logger.debug("Making output directory at %s.", escape(output))
+        os.makedirs(output, exist_ok=True)
+
     for dataset in datasets:
         dataset.download(output)
 

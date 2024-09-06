@@ -2,7 +2,6 @@
 
 import argparse
 import sys
-import os
 import hashlib
 from typing import cast, Sequence, BinaryIO, Dict, Iterable, Optional, \
     NoReturn, Union
@@ -224,11 +223,6 @@ def main_logged_in(kive: kiveapi.KiveAPI,
                    inputs: Sequence[PathOrURL],
                    nowait: bool,
                    ) -> int:
-
-    if output is not None:
-        logger.debug("Making output directory at %s.", escape(output))
-        os.makedirs(output, exist_ok=True)
-
     # Get the app from a container family.
     app = find_kive_containerapp(kive, str(app_id))
     app_link = URL(kive.server_url + app["absolute_url"])

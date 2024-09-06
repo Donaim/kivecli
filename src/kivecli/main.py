@@ -7,9 +7,10 @@ import kivecli.runkive as runkive
 import kivecli.zip as kiveclizip
 import kivecli.rerun as rerun
 import kivecli.createzipapp as createzipapp
+import kivecli.download as kivedownload
 from .mainwrap import mainwrap
 
-PROGRAMS = ["run", "zip", "rerun", "createzipapp"]
+PROGRAMS = ["run", "zip", "rerun", "createzipapp", "download"]
 
 HELP_MESSAGE = """\
 usage: kivecli [-h] {programs} [arguments ...]
@@ -59,6 +60,8 @@ def main(argv: Sequence[str]) -> int:
         return rerun.main(arguments)
     elif program == "createzipapp":
         return createzipapp.main(arguments)
+    elif program == "download":
+        return kivedownload.main(arguments)
     else:
         raise RuntimeError(f"Unknown program value {repr(program)}")
 
