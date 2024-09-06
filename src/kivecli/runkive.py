@@ -7,12 +7,11 @@ import hashlib
 from typing import cast, Sequence, BinaryIO, Dict, Iterable, Optional, \
     NoReturn, Union
 from pathlib import Path
-import time
 
 import kiveapi
 from kiveapi.dataset import Dataset
 
-from kivecli.usererror import UserError
+from .usererror import UserError
 from .logger import logger
 from .pathorurl import PathOrURL
 from .dirpath import dir_path, DirPath
@@ -22,6 +21,7 @@ from .parsecli import parse_cli
 from .login import login
 from .url import URL
 from .escape import escape
+import kivecli.download as kivedownload
 
 
 def cli_parser() -> argparse.ArgumentParser:
@@ -54,32 +54,6 @@ def cli_parser() -> argparse.ArgumentParser:
 
 
 ALLOWED_GROUPS = ['Everyone']
-
-
-def download_results(kive: kiveapi.KiveAPI,
-                     containerrun: Dict[str, object],
-                     output: Optional[DirPath]) -> None:
-    # Retrieve outputs and save to files.
-
-    run_datasets = kive.get(containerrun["dataset_list"]).json()
-    for run_dataset in run_datasets:
-        if run_dataset.get("argument_type") == "O":
-            dataset = kive.get(run_dataset["dataset"]).json()
-            checksum = dataset['MD5_checksum']
-            name = run_dataset['argument_name']
-            logger.debug("Output %s has MD5 hash %s.", escape(name), checksum)
-            filename: str = dataset["name"]
-            logger.debug("File %s corresponds to Kive argument name %s.",
-                         escape(filename), escape(name))
-
-            if output is None:
-                continue
-
-            filepath = output / filename
-            logger.debug("Downloading %s to %s.",
-                         escape(filename), escape(filepath))
-            with open(filepath, "wb") as outf:
-                kive.download_file(outf, dataset["download_url"])
 
 
 def find_name_and_permissions_match(items: Iterable[Dict[str, object]],
@@ -221,60 +195,6 @@ def upload_or_retrieve_dataset(session: kiveapi.KiveAPI,
     return None
 
 
-def await_containerrun(session: kiveapi.KiveAPI,
-                       containerrun: Dict[str, object]) \
-        -> Dict[str, object]:
-    """
-    Given a `KiveAPI instance and a container run, monitor the run
-    for completion and return the completed run.
-    """
-
-    ACTIVE_STATES = ["N", "S", "L", "R"]
-    FAIL_STATES = ["X", "F"]
-    INTERVAL = 1.0
-    MAX_WAIT = float("inf")
-
-    starttime = time.time()
-    elapsed = 0.0
-
-    runid = containerrun["id"]
-    logger.debug("Waiting for run %s to finish.", runid)
-
-    last_state: str = ""
-    while elapsed < MAX_WAIT:
-        containerrun = session.endpoints.containerruns.get(runid)
-
-        state_obj = containerrun["state"]
-        assert isinstance(state_obj, str)
-        state: str = state_obj
-
-        elapsed = round(time.time() - starttime, 2)
-
-        if state != last_state:
-            last_state = state
-            logger.debug("Run %s in state %s after %s seconds elapsed.",
-                         runid, state, elapsed)
-
-        if state in ACTIVE_STATES:
-            time.sleep(INTERVAL)
-            continue
-
-        if state == "C":
-            logger.debug("Run finished after %s seconds.", elapsed)
-        elif state in FAIL_STATES:
-            logger.warning("Run failed after %s seconds.", elapsed)
-        else:
-            logger.warning("Run failed catastrophically after %s seconds.",
-                           elapsed)
-
-        break
-    else:
-        logger.warning("Run timed out after %s seconds.", elapsed)
-        return containerrun
-
-    return containerrun
-
-
 def get_input_datasets(kive: kiveapi.KiveAPI,
                        inputs: Iterable[PathOrURL]) \
         -> Iterable[Dataset]:
@@ -370,11 +290,14 @@ def main_logged_in(kive: kiveapi.KiveAPI,
     url = URL(kive.server_url + containerrun["absolute_url"])
     logger.debug("Started at %s.", escape(url))
 
-    if nowait:
-        return 0
-
-    containerrun = await_containerrun(kive, containerrun)
-    download_results(kive, containerrun, output)
+    if not nowait:
+        kivedownload.await_containerrun(kive, containerrun)
+        if output is not None:
+            kivedownload.main_after_wait(
+                kive=kive,
+                output=output,
+                containerrun=containerrun,
+            )
 
     log_list = kive.get(containerrun["log_list"]).json()
     for log in log_list:

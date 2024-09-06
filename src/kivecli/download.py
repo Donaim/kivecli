@@ -99,6 +99,32 @@ def await_containerrun(session: kiveapi.KiveAPI,
     return containerrun
 
 
+def main_after_wait(kive: kiveapi.KiveAPI,
+                    output: DirPath,
+                    containerrun: Dict[str, object],
+                    ) -> int:
+
+    datasets = list(collect_run_outputs(kive, containerrun))
+    download_results(datasets, output)
+
+    return 0
+
+
+def main_with_run(kive: kiveapi.KiveAPI,
+                  output: DirPath,
+                  containerrun: Dict[str, object],
+                  nowait: bool,
+                  ) -> int:
+
+    if not nowait:
+        await_containerrun(kive, containerrun)
+
+    return main_after_wait(
+        kive=kive,
+        output=output,
+        containerrun=containerrun)
+
+
 def main_parsed(kive: kiveapi.KiveAPI,
                 output: DirPath,
                 run_id: int,
@@ -106,13 +132,7 @@ def main_parsed(kive: kiveapi.KiveAPI,
                 ) -> int:
 
     containerrun = find_run(kive, run_id)
-    if not nowait:
-        await_containerrun(kive, containerrun)
-
-    datasets = list(collect_run_outputs(kive, containerrun))
-    download_results(datasets, output)
-
-    return 0
+    return main_with_run(kive, output, containerrun, nowait)
 
 
 def main(argv: Sequence[str]) -> int:
