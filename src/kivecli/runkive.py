@@ -267,7 +267,7 @@ def main_logged_in(kive: kiveapi.KiveAPI,
         checksum = dataset.raw['MD5_checksum']
         logger.debug("Input %s has MD5 hash %s.", escape(name), checksum)
 
-    run_name_top = run_name if run_name is not None else 'A kivecli run'
+    run_name_top: str = run_name if run_name is not None else 'A kivecli run'
     runspec = {
         "name": run_name_top,
         "app": app["url"],
@@ -282,7 +282,8 @@ def main_logged_in(kive: kiveapi.KiveAPI,
     logger.debug("Starting the run.")
     containerrun = kive.endpoints.containerruns.post(json=runspec)
     url = URL(kive.server_url + containerrun["absolute_url"])
-    logger.debug("Started at %s.", escape(url))
+    logger.debug("Started run named %s at %s.",
+                 escape(run_name_top), escape(url))
 
     if not nowait:
         kivedownload.await_containerrun(kive, containerrun)
