@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from typing import Sequence, Iterator, List, Dict
+from typing import Sequence, Iterator, List, Dict, Mapping
 
 import kiveapi
 
@@ -12,41 +12,21 @@ from .pathorurl import PathOrURL
 from .url import URL
 from .dirpath import dir_path
 from .inputfileorurl import input_file_or_url
-from .urlargument import url_argument
 from .mainwrap import mainwrap
 from .parsecli import parse_cli
 from .login import login
-from .escape import escape
-
-
-def find_run(kive: kiveapi.KiveAPI, run_id: int) -> Dict[str, object]:
-    containerrun: Dict[str, object] = kive.endpoints.containerruns.get(run_id)
-    url: str = str(containerrun["url"])
-    logger.debug("Found run with id %s at %s.", run_id, escape(URL(url)))
-    return containerrun
+from .findrun import find_run
+from .collect_run_files import collect_run_files
 
 
 def collect_run_inputs(kive: kiveapi.KiveAPI,
                        containerrun: Dict[str, object]) -> Iterator[URL]:
 
-    run_datasets = kive.get(containerrun["dataset_list"]).json()
-    for run_dataset in run_datasets:
-        if run_dataset.get("argument_type") == "I":
-            dataset = kive.get(run_dataset["dataset"]).json()
-            checksum = dataset['MD5_checksum']
-            name = str(run_dataset['argument_name'])
-            logger.debug("Found dataset at %s for %s.",
-                         escape(URL(str(dataset["url"]))),
-                         escape(str(dataset["name"])))
-            filename = str(dataset["name"])
-            logger.debug("File %s corresponds to Kive argument name %s.",
-                         escape(filename), escape(name))
-            logger.debug("Input %s has MD5 hash %s.", escape(name), checksum)
+    def matches(run_dataset: Mapping[str, object]) -> bool:
+        return run_dataset.get("argument_type") == "I"
 
-            url_string: str = run_dataset["dataset"]
-            url = url_argument(url_string)
-
-            yield url
+    for dataset in collect_run_files(kive, matches, containerrun):
+        yield dataset.url
 
 
 def cli_parser() -> argparse.ArgumentParser:
