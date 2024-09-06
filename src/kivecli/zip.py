@@ -34,7 +34,12 @@ def zip_directory_to_stream(directory_path: str,
 
 def main(argv: Sequence[str]) -> int:
     parser = argparse.ArgumentParser(
-        description='Zip a directory and write to stdout.')
+        description='Zip a directory and write to stdout.',
+        epilog='''\
+This program ensures that the resulting archive \
+will be accepted as a pipeline definition by Kive.
+''')
+
     parser.add_argument('directory', type=dir_path,
                         help='The path of the directory to zip.')
     args = parser.parse_args()
