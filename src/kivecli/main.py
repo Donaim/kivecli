@@ -27,9 +27,8 @@ options:
 
 PROGRAM_ERROR_MESSAGE = """\
 usage: kivecli [-h] {programs} [arguments ...]
-kivecli: error: argument program: invalid choice: 'hello' (choose from {lst})
-""".format(programs='{' + ','.join(PROGRAMS) + '}',
-           lst=', '.join(map(repr, PROGRAMS)))
+kivecli: error: argument program: invalid choice: {choice} (choose from {lst})
+"""
 
 PROGRAM_MISSING_MESSAGE = """\
 usage: kivecli [-h] {programs} [arguments ...]
@@ -48,7 +47,13 @@ def main(argv: Sequence[str]) -> int:
         return 0
 
     if program not in PROGRAMS:
-        print(PROGRAM_ERROR_MESSAGE, file=sys.stderr, end='')
+        msg = PROGRAM_ERROR_MESSAGE.format(
+            choice=repr(program),
+            programs='{' + ','.join(PROGRAMS) + '}',
+            lst=', '.join(map(repr, PROGRAMS)),
+        )
+
+        print(msg, file=sys.stderr, end='')
         return 1
 
     arguments = argv[1:]
