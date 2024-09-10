@@ -16,6 +16,7 @@ from .findrun import find_run
 from .collect_run_files import collect_run_files
 from .dataset import Dataset
 from .escape import escape
+from .usererror import UserError
 
 
 def cli_parser() -> argparse.ArgumentParser:
@@ -111,6 +112,10 @@ def main_after_wait(kive: kiveapi.KiveAPI,
                     ) -> int:
 
     datasets = list(collect_run_outputs(kive, containerrun))
+    if len(datasets) <= 0:
+        raise UserError("Could not find any outputs for run with id %s.",
+                        containerrun["id"])
+
     download_results(datasets, output)
 
     return 0
