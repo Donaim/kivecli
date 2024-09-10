@@ -20,6 +20,7 @@ from .parsecli import parse_cli
 from .login import login
 from .url import URL
 from .escape import escape
+from .await_containerrrun import await_containerrun
 import kivecli.download as kivedownload
 
 
@@ -286,7 +287,7 @@ def main_logged_in(kive: kiveapi.KiveAPI,
                  escape(run_name_top), escape(url))
 
     if not nowait:
-        kivedownload.await_containerrun(kive, containerrun)
+        await_containerrun(kive, containerrun)
         if output is not None:
             kivedownload.main_after_wait(
                 kive=kive,

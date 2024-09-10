@@ -6,11 +6,12 @@ from typing import Sequence
 import kivecli.runkive as runkive
 import kivecli.zip as kiveclizip
 import kivecli.rerun as rerun
+import kivecli.watch as watch
 import kivecli.createzipapp as createzipapp
 import kivecli.download as kivedownload
 from .mainwrap import mainwrap
 
-PROGRAMS = ["run", "rerun", "download", "createzipapp", "zip"]
+PROGRAMS = ["run", "rerun", "download", "watch", "createzipapp", "zip"]
 
 HELP_MESSAGE = """\
 usage: kivecli [-h] {programs} [arguments ...]
@@ -63,6 +64,8 @@ def main(argv: Sequence[str]) -> int:
         return kiveclizip.main(arguments)
     elif program == "rerun":
         return rerun.main(arguments)
+    elif program == "watch":
+        return watch.main(arguments)
     elif program == "createzipapp":
         return createzipapp.main(arguments)
     elif program == "download":
