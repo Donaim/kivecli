@@ -312,7 +312,7 @@ def main_logged_in(kive: kiveapi.KiveAPI,
             stderr.flush()
             logger.debug("Done with stderr.")
 
-    if containerrun["state"] == "C":
+    if nowait or containerrun["state"] == "C":
         return 0
     else:
         return 1
