@@ -18,7 +18,7 @@ def cli_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--filter", action='append', nargs=2, metavar=('key', 'val'),
         help="Filter key and value pair used for search, "
-        "e.g., `--filter state F` - for runs that failed.")
+        "e.g., `--filter states F` - for runs that failed.")
 
     parser.add_argument("--page_size", type=int, default=1000,
                         help="Number of results per page (default is 1000).")
