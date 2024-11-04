@@ -20,8 +20,8 @@ def cli_parser() -> argparse.ArgumentParser:
         help="Filter key and value pair used for search, "
         "e.g., `--filter state F` - for runs that failed.")
 
-    parser.add_argument("--page_size", type=int, default=25,
-                        help="Number of results per page (default is 25).")
+    parser.add_argument("--page_size", type=int, default=1000,
+                        help="Number of results per page (default is 1000).")
 
     return parser
 
@@ -69,7 +69,7 @@ def main(argv: Sequence[str]) -> int:
     args = parse_cli(parser, argv)
 
     query = build_search_query(args)
-    logger.info("Built search query %r.", query)
+    logger.debug("Built search query %r.", query)
 
     try:
         containerruns = fetch_paginated_results(query)
