@@ -63,6 +63,16 @@ def cli_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def get_run_name(orig_run_name: str) -> str:
+    name = f'Rerun {orig_run_name!r}'
+
+    while len(name) >= 60:
+        orig_run_name = orig_run_name[:-1]
+        name = f'Rerun {orig_run_name!r}...'
+
+    return name
+
+
 def main(argv: Sequence[str]) -> int:
     parser = cli_parser()
     args = parse_cli(parser, argv)
@@ -70,7 +80,7 @@ def main(argv: Sequence[str]) -> int:
     with login() as kive:
         containerrun = find_run(kive, args.run_id)
         orig_run_name = str(containerrun["name"])
-        run_name = f'Rerun {orig_run_name!r}'
+        run_name = get_run_name(orig_run_name)
 
         urls = list(collect_run_inputs(kive, containerrun))
         logger.debug("Collected %s datasets.", len(urls))
