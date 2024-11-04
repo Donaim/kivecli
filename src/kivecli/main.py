@@ -9,9 +9,11 @@ import kivecli.rerun as rerun
 import kivecli.watch as watch
 import kivecli.createzipapp as createzipapp
 import kivecli.download as kivedownload
+import kivecli.findruns as findruns
 from .mainwrap import mainwrap
 
-PROGRAMS = ["run", "rerun", "download", "watch", "createzipapp", "zip"]
+PROGRAMS = ["run", "rerun", "download", "watch", "createzipapp", "zip",
+            "findruns"]
 
 HELP_MESSAGE = """\
 usage: kivecli [-h] {programs} [arguments ...]
@@ -70,6 +72,8 @@ def main(argv: Sequence[str]) -> int:
         return createzipapp.main(arguments)
     elif program == "download":
         return kivedownload.main(arguments)
+    elif program == "findruns":
+        return findruns.main(arguments)
     else:
         raise RuntimeError(f"Unknown program value {repr(program)}")
 
