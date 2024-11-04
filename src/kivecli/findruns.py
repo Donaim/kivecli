@@ -59,7 +59,7 @@ def fetch_paginated_results(query: Dict[str, object]) \
             except KeyError as err:
                 logger.error("Unexpected response structure: %s", err)
                 break
-            except RuntimeError as err:
+            except BaseException as err:
                 logger.error("Failed to retrieve container runs: %s", err)
                 break
 
