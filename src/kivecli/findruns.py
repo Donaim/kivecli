@@ -10,6 +10,8 @@ from .login import login
 from .usererror import UserError
 from .logger import logger
 
+import kiveapi
+
 
 def cli_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -59,7 +61,10 @@ def fetch_paginated_results(query: Dict[str, object]) \
             except KeyError as err:
                 logger.error("Unexpected response structure: %s", err)
                 break
-            except BaseException as err:
+            except kiveapi.KiveServerException as err:
+                logger.error("Failed to retrieve container runs: %s", err)
+                break
+            except kiveapi.KiveClientException as err:
                 logger.error("Failed to retrieve container runs: %s", err)
                 break
 
