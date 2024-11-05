@@ -38,7 +38,7 @@ class RunFilesFilter:
                                   )
         else:
             raise UserError("Bad run filter %r. "
-                            "Expected something like %s.",
+                            "Expected something like %r.",
                             text, str(RunFilesFilter.default()))
 
     @staticmethod
