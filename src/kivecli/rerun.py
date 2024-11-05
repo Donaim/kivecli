@@ -2,7 +2,8 @@
 
 import argparse
 import sys
-from typing import Sequence, Iterator, List, Dict, Mapping
+import re
+from typing import Sequence, Iterator, List, Dict
 
 import kiveapi
 
@@ -17,15 +18,18 @@ from .parsecli import parse_cli
 from .login import login
 from .findrun import find_run
 from .collect_run_files import collect_run_files
+from .runfilesfilter import RunFilesFilter
+from .argumenttype import ArgumentType
 
 
 def collect_run_inputs(kive: kiveapi.KiveAPI,
                        containerrun: Dict[str, object]) -> Iterator[URL]:
 
-    def matches(run_dataset: Mapping[str, object]) -> bool:
-        return run_dataset.get("argument_type") == "I"
+    runfilter = RunFilesFilter(argument_type={ArgumentType.INPUT},
+                               name=re.compile('.*'),
+                               )
 
-    for dataset in collect_run_files(kive, matches, containerrun):
+    for dataset in collect_run_files(containerrun, runfilter):
         yield dataset.url
 
 
@@ -97,6 +101,7 @@ def main(argv: Sequence[str]) -> int:
             app_id=args.app_id,
             inputs=inputs,
             nowait=args.nowait,
+            runfilter=args.runfilter,
         )
 
 

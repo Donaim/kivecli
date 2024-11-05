@@ -2,7 +2,7 @@
 
 import argparse
 import os
-from typing import Sequence, Dict, Iterable, Iterator, Mapping
+from typing import Sequence, Dict, Iterable
 
 import kiveapi
 
@@ -17,6 +17,7 @@ from .dataset import Dataset
 from .escape import escape
 from .usererror import UserError
 from .await_containerrrun import await_containerrun
+from .runfilesfilter import RunFilesFilter
 
 
 def cli_parser() -> argparse.ArgumentParser:
@@ -29,17 +30,11 @@ def cli_parser() -> argparse.ArgumentParser:
                         " Not downloading by default.")
     parser.add_argument("--nowait", action='store_true', default=False,
                         help="Do not wait until the run is finished.")
+    parser.add_argument("--runfilter", type=RunFilesFilter.parse,
+                        default=RunFilesFilter.default(),
+                        help="Filter for files to be downloaded.")
 
     return parser
-
-
-def collect_run_outputs(kive: kiveapi.KiveAPI,
-                        containerrun: Dict[str, object]) -> Iterator[Dataset]:
-
-    def matches(run_dataset: Mapping[str, object]) -> bool:
-        return run_dataset.get("argument_type") == "O"
-
-    yield from collect_run_files(kive, matches, containerrun)
 
 
 def download_results(datasets: Iterable[Dataset],
@@ -55,9 +50,10 @@ def download_results(datasets: Iterable[Dataset],
 def main_after_wait(kive: kiveapi.KiveAPI,
                     output: DirPath,
                     containerrun: Dict[str, object],
+                    runfilter: RunFilesFilter,
                     ) -> int:
 
-    datasets = list(collect_run_outputs(kive, containerrun))
+    datasets = list(collect_run_files(containerrun, runfilter))
     if len(datasets) <= 0:
         raise UserError("Could not find any outputs for run with id %s.",
                         containerrun["id"])
@@ -71,6 +67,7 @@ def main_with_run(kive: kiveapi.KiveAPI,
                   output: DirPath,
                   containerrun: Dict[str, object],
                   nowait: bool,
+                  runfilter: RunFilesFilter,
                   ) -> int:
 
     if not nowait:
@@ -79,17 +76,20 @@ def main_with_run(kive: kiveapi.KiveAPI,
     return main_after_wait(
         kive=kive,
         output=output,
-        containerrun=containerrun)
+        containerrun=containerrun,
+        runfilter=runfilter,
+    )
 
 
 def main_parsed(kive: kiveapi.KiveAPI,
                 output: DirPath,
                 run_id: int,
                 nowait: bool,
+                runfilter: RunFilesFilter,
                 ) -> int:
 
     containerrun = find_run(kive, run_id)
-    return main_with_run(kive, output, containerrun, nowait)
+    return main_with_run(kive, output, containerrun, nowait, runfilter)
 
 
 def main(argv: Sequence[str]) -> int:
@@ -100,6 +100,7 @@ def main(argv: Sequence[str]) -> int:
                            output=args.output,
                            run_id=args.run_id,
                            nowait=args.nowait,
+                           runfilter=args.runfilter,
                            )
 
 

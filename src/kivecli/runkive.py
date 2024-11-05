@@ -21,6 +21,7 @@ from .login import login
 from .url import URL
 from .escape import escape
 from .await_containerrrun import await_containerrun
+from .runfilesfilter import RunFilesFilter
 import kivecli.download as kivedownload
 
 
@@ -223,6 +224,7 @@ def main_logged_in(kive: kiveapi.KiveAPI,
                    app_id: int,
                    inputs: Sequence[PathOrURL],
                    nowait: bool,
+                   runfilter: RunFilesFilter,
                    ) -> int:
     # Get the app from a container family.
     app = find_kive_containerapp(kive, str(app_id))
@@ -293,6 +295,7 @@ def main_logged_in(kive: kiveapi.KiveAPI,
                 kive=kive,
                 output=output,
                 containerrun=containerrun,
+                runfilter=runfilter,
             )
 
     log_list = kive.get(containerrun["log_list"]).json()
@@ -327,6 +330,7 @@ def main_parsed(output: Optional[DirPath],
                 app_id: int,
                 inputs: Sequence[PathOrURL],
                 nowait: bool,
+                runfilter: RunFilesFilter,
                 ) -> int:
 
     with login() as kive:
@@ -339,6 +343,7 @@ def main_parsed(output: Optional[DirPath],
                               app_id=app_id,
                               inputs=inputs,
                               nowait=nowait,
+                              runfilter=runfilter,
                               )
 
 
@@ -354,6 +359,7 @@ def main(argv: Sequence[str]) -> int:
                        app_id=args.app_id,
                        inputs=inputs,
                        nowait=args.nowait,
+                       runfilter=args.runfilter,
                        )
 
 
