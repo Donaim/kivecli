@@ -19,16 +19,12 @@ from .login import login
 from .findrun import find_run
 from .collect_run_files import collect_run_files
 from .runfilesfilter import RunFilesFilter
-from .argumenttype import ArgumentType
 
 
 def collect_run_inputs(kive: kiveapi.KiveAPI,
                        containerrun: Dict[str, object]) -> Iterator[URL]:
 
-    runfilter = RunFilesFilter(argument_type={ArgumentType.INPUT},
-                               name=re.compile('.*'),
-                               )
-
+    runfilter = RunFilesFilter(re.compile('I:.*'))
     for dataset in collect_run_files(containerrun, runfilter):
         yield dataset.url
 
