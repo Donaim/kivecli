@@ -38,6 +38,9 @@ def cli_parser() -> argparse.ArgumentParser:
 
     parser.add_argument("--nowait", action='store_true', default=False,
                         help="Do not wait until the run is finished.")
+    parser.add_argument("--runfilter", type=RunFilesFilter.parse,
+                        default=RunFilesFilter.default(),
+                        help="Filter for files to be downloaded.")
     parser.add_argument("--batch", help="Unique name for the batch.")
     parser.add_argument("--stdout",
                         default=sys.stdout.buffer,
