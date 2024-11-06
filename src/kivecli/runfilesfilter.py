@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import re
 
 from .datasetinfo import DatasetInfo
+from .argumenttype import ArgumentType
 
 
 @dataclass(frozen=True)
@@ -22,5 +23,5 @@ class RunFilesFilter:
 
     @staticmethod
     def default() -> 'RunFilesFilter':
-        pattern = re.compile('O: .*')
+        pattern = re.compile(f'{ArgumentType.OUTPUT.value}: .*')
         return RunFilesFilter(pattern)
