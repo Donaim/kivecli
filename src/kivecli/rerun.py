@@ -2,7 +2,6 @@
 
 import argparse
 import sys
-import re
 from typing import Sequence, Iterator, List, Dict
 
 import kiveapi
@@ -25,7 +24,7 @@ from .argumenttype import ArgumentType
 def collect_run_inputs(kive: kiveapi.KiveAPI,
                        containerrun: Dict[str, object]) -> Iterator[URL]:
 
-    runfilter = RunFilesFilter(re.compile(f'{ArgumentType.INPUT.value}: .*'))
+    runfilter = RunFilesFilter.make([ArgumentType.INPUT], '.*')
     for dataset in collect_run_files(containerrun, runfilter):
         yield dataset.url
 
