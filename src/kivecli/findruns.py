@@ -55,6 +55,7 @@ def fetch_paginated_results(query: Dict[str, object]) \
                     data = kive.endpoints.containerruns.get(params=query)
 
                 yield from data['results']
+                sys.stdout.flush()
 
                 url = data.get('next')
                 if not url:
@@ -87,7 +88,6 @@ def main(argv: Sequence[str]) -> int:
         if i > 0:
             sys.stdout.write(",")
         json.dump(run, sys.stdout, indent=2)
-        sys.stdout.flush()
     sys.stdout.write("]")
     sys.stdout.flush()
 
