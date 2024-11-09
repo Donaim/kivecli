@@ -3,6 +3,7 @@
 import argparse
 import json
 from typing import Dict, Sequence, Iterator
+import sys
 
 from .mainwrap import mainwrap
 from .parsecli import parse_cli
@@ -81,8 +82,14 @@ def main(argv: Sequence[str]) -> int:
     except Exception as err:
         raise UserError("An error occurred while searching: %s", err)
 
-    for run in containerruns:
-        print(json.dumps(run, indent=2))
+    sys.stdout.write("[")
+    for i, run in enumerate(containerruns):
+        if i > 0:
+            sys.stdout.write(",")
+        json.dump(run, sys.stdout, indent=2)
+        sys.stdout.flush()
+    sys.stdout.write("]")
+    sys.stdout.flush()
 
     return 0
 
