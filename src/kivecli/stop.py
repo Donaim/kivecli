@@ -31,6 +31,11 @@ def main(argv: Sequence[str]) -> int:
     with login() as kive:
         containerrun = find_run(kive, args.run_id)
         print_run(containerrun)
+        end_time = containerrun['end_time']
+        if end_time is not None:
+            logger.info("Already finished.")
+            return 0
+
         data = {
             "is_stop_requested": True,
         }
