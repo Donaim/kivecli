@@ -11,10 +11,11 @@ import kivecli.createzipapp as createzipapp
 import kivecli.download as kivedownload
 import kivecli.findruns as findruns
 import kivecli.stop as stop
+import kivecli.findbatches as findbatches
 from .mainwrap import mainwrap
 
 PROGRAMS = ["run", "rerun", "download", "watch", "createzipapp", "zip",
-            "findruns", "stop"]
+            "findruns", "stop", "findbatches"]
 
 HELP_MESSAGE = """\
 usage: kivecli [-h] {programs} [arguments ...]
@@ -77,6 +78,8 @@ def main(argv: Sequence[str]) -> int:
         return findruns.main(arguments)
     elif program == "stop":
         return stop.main(arguments)
+    elif program == "findbatches":
+        return findbatches.main(arguments)
     else:
         raise RuntimeError(f"Unknown program value {repr(program)}")
 
