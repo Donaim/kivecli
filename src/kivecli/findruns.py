@@ -26,6 +26,9 @@ def cli_parser() -> argparse.ArgumentParser:
     parser.add_argument("--page_size", type=int, default=1000,
                         help="Number of results per page (default is 1000).")
 
+    parser.add_argument("--json", action='store_true',
+                        help="Print all info for the matching runs.")
+
     return parser
 
 
@@ -83,12 +86,22 @@ def main(argv: Sequence[str]) -> int:
     except Exception as err:
         raise UserError("An error occurred while searching: %s", err)
 
-    sys.stdout.write("[")
+    is_json: bool = args.json
+
+    if is_json:
+        sys.stdout.write("[")
+
     for i, run in enumerate(containerruns):
-        if i > 0:
-            sys.stdout.write(",")
-        json.dump(run, sys.stdout, indent=2)
-    sys.stdout.write("]")
+        if is_json:
+            if i > 0:
+                sys.stdout.write(",")
+            json.dump(run, sys.stdout, indent=2)
+        else:
+            print(run["id"])
+
+    if is_json:
+        sys.stdout.write("]")
+
     sys.stdout.flush()
 
     return 0
