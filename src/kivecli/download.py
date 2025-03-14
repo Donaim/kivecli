@@ -21,7 +21,7 @@ from .runfilesfilter import RunFilesFilter
 
 
 def cli_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Download run outputs.")
+    parser = argparse.ArgumentParser(description="Download run files.")
 
     parser.add_argument("--run_id", type=int, required=True,
                         help="Run ID of the target Kive run.")
@@ -30,7 +30,7 @@ def cli_parser() -> argparse.ArgumentParser:
                         " Not downloading by default.")
     parser.add_argument("--nowait", action='store_true', default=False,
                         help="Do not wait until the run is finished.")
-    parser.add_argument("--runfilter", type=RunFilesFilter.parse,
+    parser.add_argument("--filefilter", type=RunFilesFilter.parse,
                         default=RunFilesFilter.default(),
                         help="Filter for files to be downloaded.")
 
