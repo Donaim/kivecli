@@ -34,7 +34,7 @@ def cli_parser() -> argparse.ArgumentParser:
 
     parser.add_argument("--nowait", action='store_true', default=False,
                         help="Do not wait until the run is finished.")
-    parser.add_argument("--runfilter", type=RunFilesFilter.parse,
+    parser.add_argument("--filefilter", type=RunFilesFilter.parse,
                         default=RunFilesFilter.default(),
                         help="Filter for files to be downloaded.")
     parser.add_argument("--batch", help="Unique name for the batch.")
@@ -227,7 +227,7 @@ def main_logged_in(kive: kiveapi.KiveAPI,
                    app_id: int,
                    inputs: Sequence[PathOrURL],
                    nowait: bool,
-                   runfilter: RunFilesFilter,
+                   filefilter: RunFilesFilter,
                    ) -> int:
     # Get the app from a container family.
     app = find_kive_containerapp(kive, str(app_id))
@@ -298,7 +298,7 @@ def main_logged_in(kive: kiveapi.KiveAPI,
                 kive=kive,
                 output=output,
                 containerrun=containerrun,
-                runfilter=runfilter,
+                filefilter=filefilter,
             )
 
     log_list = kive.get(containerrun["log_list"]).json()
@@ -333,7 +333,7 @@ def main_parsed(output: Optional[DirPath],
                 app_id: int,
                 inputs: Sequence[PathOrURL],
                 nowait: bool,
-                runfilter: RunFilesFilter,
+                filefilter: RunFilesFilter,
                 ) -> int:
 
     with login() as kive:
@@ -346,7 +346,7 @@ def main_parsed(output: Optional[DirPath],
                               app_id=app_id,
                               inputs=inputs,
                               nowait=nowait,
-                              runfilter=runfilter,
+                              filefilter=filefilter,
                               )
 
 
@@ -362,7 +362,7 @@ def main(argv: Sequence[str]) -> int:
                        app_id=args.app_id,
                        inputs=inputs,
                        nowait=args.nowait,
-                       runfilter=args.runfilter,
+                       filefilter=args.filefilter,
                        )
 
 

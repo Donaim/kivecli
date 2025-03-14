@@ -11,13 +11,13 @@ from .login import login
 
 
 def collect_run_files(containerrun: Mapping[str, object],
-                      runfilter: RunFilesFilter,
+                      filefilter: RunFilesFilter,
                       ) -> Iterator[Dataset]:
 
     dataset_list = URL(str(containerrun["dataset_list"]))
     with login():
         for run_dataset in DatasetInfo.from_run(dataset_list):
-            if runfilter.matches(run_dataset):
+            if filefilter.matches(run_dataset):
                 dataset = Dataset.get(run_dataset.url)
                 checksum = dataset.md5checksum
                 filename = dataset.name
