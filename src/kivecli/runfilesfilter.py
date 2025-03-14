@@ -7,6 +7,9 @@ from .datasetinfo import DatasetInfo
 from .argumenttype import ArgumentType
 
 
+NAME_SCHEME = "{type}: {name}"
+
+
 @dataclass(frozen=True)
 class RunFilesFilter:
     pattern: re.Pattern[str]
@@ -15,11 +18,14 @@ class RunFilesFilter:
     def make(types: Iterable[ArgumentType], name_pattern: str) \
             -> 'RunFilesFilter':
         type_prefix = '|'.join(f'({x.value})' for x in types)
-        pattern = re.compile(type_prefix + name_pattern)
+        stringified = NAME_SCHEME.format(type=type_prefix,
+                                         name=name_pattern)
+        pattern = re.compile(stringified)
         return RunFilesFilter(pattern)
 
     def matches(self, info: DatasetInfo) -> bool:
-        stringified = f"{info.argument_type.value}: {info.argument_name}"
+        stringified = NAME_SCHEME.format(type=info.argument_type.value,
+                                         name=info.argument_name)
         return bool(self.pattern.match(stringified))
 
     def __str__(self) -> str:
