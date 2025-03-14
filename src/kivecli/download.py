@@ -51,10 +51,10 @@ def download_results(datasets: Iterable[Dataset],
 def main_after_wait(kive: kiveapi.KiveAPI,
                     output: DirPath,
                     containerrun: Dict[str, object],
-                    runfilter: RunFilesFilter,
+                    filefilter: RunFilesFilter,
                     ) -> int:
 
-    datasets = list(collect_run_files(containerrun, runfilter))
+    datasets = list(collect_run_files(containerrun, filefilter))
     if len(datasets) <= 0:
         raise UserError("Could not find any outputs for run with id %s.",
                         containerrun["id"])
@@ -68,7 +68,7 @@ def main_with_run(kive: kiveapi.KiveAPI,
                   output: DirPath,
                   containerrun: Dict[str, object],
                   nowait: bool,
-                  runfilter: RunFilesFilter,
+                  filefilter: RunFilesFilter,
                   ) -> int:
 
     if not nowait:
@@ -78,7 +78,7 @@ def main_with_run(kive: kiveapi.KiveAPI,
         kive=kive,
         output=output,
         containerrun=containerrun,
-        runfilter=runfilter,
+        filefilter=filefilter,
     )
 
 
@@ -86,11 +86,11 @@ def main_parsed(kive: kiveapi.KiveAPI,
                 output: DirPath,
                 run_id: int,
                 nowait: bool,
-                runfilter: RunFilesFilter,
+                filefilter: RunFilesFilter,
                 ) -> int:
 
     containerrun = find_run(kive, run_id)
-    return main_with_run(kive, output, containerrun, nowait, runfilter)
+    return main_with_run(kive, output, containerrun, nowait, filefilter)
 
 
 def main(argv: Sequence[str]) -> int:
@@ -101,7 +101,7 @@ def main(argv: Sequence[str]) -> int:
                            output=args.output,
                            run_id=args.run_id,
                            nowait=args.nowait,
-                           runfilter=args.runfilter,
+                           filefilter=args.filefilter,
                            )
 
 
