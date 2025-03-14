@@ -32,7 +32,8 @@ def cli_parser() -> argparse.ArgumentParser:
                         help="Do not wait until the run is finished.")
     parser.add_argument("--filefilter", type=RunFilesFilter.parse,
                         default=RunFilesFilter.default(),
-                        help="Filter for files to be downloaded.")
+                        help="Filter for files to be downloaded."
+                        " All outputs are downloaded by default.")
 
     return parser
 
