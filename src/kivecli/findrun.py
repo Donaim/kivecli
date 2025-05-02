@@ -30,19 +30,9 @@ def find_run(kive: kiveapi.KiveAPI, run_id: int) -> Dict[str, object]:
 
 def cli_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Search for Kive container runs.")
-
-    parser.add_argument(
-        "--filter", action='append', nargs=2, metavar=('key', 'val'),
-        help="Filter key and value pair used for search, "
-        "e.g., `--filter states F` - for runs that failed.")
-
-    parser.add_argument("--page_size", type=int, default=1000,
-                        help="Number of results per page (default is 1000).")
-
-    parser.add_argument("--json", action='store_true',
-                        help="Print all info for the matching runs.")
-
+        description="Search for a particular Kive container run.")
+    parser.add_argument("--run_id", type=int, required=True,
+                        help="Run ID of the target Kive run.")
     return parser
 
 
