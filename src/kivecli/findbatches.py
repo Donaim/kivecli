@@ -82,9 +82,7 @@ def fetch_paginated_results(query: Mapping[str, object]) \
 def findbatches(name: Optional[str],
                 description: Optional[str],
                 page_size: int = DEFAULT_PAGESIZE,
-                is_json: bool = False,
                 ) -> Iterator[Mapping[str, object]]:
-
     query = build_search_query(name=name,
                                description=description,
                                page_size=page_size,
@@ -106,7 +104,6 @@ def main_typed(name: Optional[str],
     batches = findbatches(name=name,
                           description=description,
                           page_size=page_size,
-                          is_json=is_json,
                           )
 
     if is_json:
