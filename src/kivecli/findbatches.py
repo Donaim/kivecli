@@ -2,7 +2,7 @@
 
 import argparse
 import json
-from typing import Dict, Sequence, Iterator, Optional
+from typing import Mapping, Sequence, Iterator, Optional, MutableMapping
 import sys
 
 from .mainwrap import mainwrap
@@ -14,6 +14,9 @@ from .logger import logger
 import kiveapi
 
 
+DEFAULT_PAGESIZE = 1000
+
+
 def cli_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Search for a Kive batch.")
@@ -22,8 +25,8 @@ def cli_parser() -> argparse.ArgumentParser:
     parser.add_argument("--description",
                         help="Description of the batch contains.")
 
-    parser.add_argument("--page_size", type=int, default=1000,
-                        help="Number of results per page (default is 1000).")
+    parser.add_argument("--page_size", type=int, default=DEFAULT_PAGESIZE,
+                        help="Number of results per page.")
     parser.add_argument("--json", action='store_true',
                         help="Print all info for the matching runs.")
 
@@ -33,8 +36,8 @@ def cli_parser() -> argparse.ArgumentParser:
 def build_search_query(name: Optional[str],
                        description: Optional[str],
                        page_size: int,
-                       ) -> Dict[str, object]:
-    query: Dict[str, object] = {'page_size': page_size}
+                       ) -> Mapping[str, object]:
+    query: MutableMapping[str, object] = {'page_size': page_size}
 
     for i, (key, val) in enumerate([('name', name),
                                     ('description', description),
@@ -45,8 +48,8 @@ def build_search_query(name: Optional[str],
     return query
 
 
-def fetch_paginated_results(query: Dict[str, object]) \
-        -> Iterator[Dict[str, object]]:
+def fetch_paginated_results(query: Mapping[str, object]) \
+        -> Iterator[Mapping[str, object]]:
 
     with login() as kive:
         url = None
@@ -76,11 +79,11 @@ def fetch_paginated_results(query: Dict[str, object]) \
                 break
 
 
-def main_typed(name: Optional[str],
-               description: Optional[str],
-               page_size: int = 1000,
-               is_json: bool = False,
-               ) -> None:
+def findbatches(name: Optional[str],
+                description: Optional[str],
+                page_size: int = DEFAULT_PAGESIZE,
+                is_json: bool = False,
+                ) -> Iterator[Mapping[str, object]]:
 
     query = build_search_query(name=name,
                                description=description,
@@ -89,9 +92,22 @@ def main_typed(name: Optional[str],
     logger.debug("Built search query %r.", query)
 
     try:
-        batches = fetch_paginated_results(query)
+        yield from fetch_paginated_results(query)
     except Exception as err:
         raise UserError("An error occurred while searching: %s", err)
+
+
+def main_typed(name: Optional[str],
+               description: Optional[str],
+               page_size: int = DEFAULT_PAGESIZE,
+               is_json: bool = False,
+               ) -> None:
+
+    batches = findbatches(name=name,
+                          description=description,
+                          page_size=page_size,
+                          is_json=is_json,
+                          )
 
     if is_json:
         sys.stdout.write("[")
