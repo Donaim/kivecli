@@ -4,8 +4,6 @@ import argparse
 import sys
 from typing import Sequence, Iterator, List, Dict
 
-import kiveapi
-
 import kivecli.runkive as runkive
 from .logger import logger
 from .pathorurl import PathOrURL
@@ -21,9 +19,7 @@ from .runfilesfilter import RunFilesFilter
 from .argumenttype import ArgumentType
 
 
-def collect_run_inputs(kive: kiveapi.KiveAPI,
-                       containerrun: Dict[str, object]) -> Iterator[URL]:
-
+def collect_run_inputs(containerrun: Dict[str, object]) -> Iterator[URL]:
     filefilter = RunFilesFilter.make([ArgumentType.INPUT], '.*')
     for dataset in collect_run_files(containerrun, filefilter):
         yield dataset.url
@@ -80,12 +76,12 @@ def main(argv: Sequence[str]) -> int:
     parser = cli_parser()
     args = parse_cli(parser, argv)
 
-    with login() as kive:
-        containerrun = find_run(kive, args.run_id)
+    with login():
+        containerrun = find_run(args.run_id)
         orig_run_name = str(containerrun["name"])
         run_name = get_run_name(orig_run_name)
 
-        urls = list(collect_run_inputs(kive, containerrun))
+        urls = list(collect_run_inputs(containerrun))
         logger.debug("Collected %s datasets.", len(urls))
 
         prefix: List[PathOrURL] = args.prefix or []

@@ -25,7 +25,7 @@ def main(argv: Sequence[str]) -> int:
     args = parse_cli(parser, argv)
 
     with login() as kive:
-        containerrun = find_run(kive, args.run_id)
+        containerrun = find_run(args.run_id)
         await_containerrun(kive, containerrun)
         return 0
 

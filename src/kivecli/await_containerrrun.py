@@ -1,14 +1,12 @@
 
 import time
-import kiveapi
 from typing import Dict
 
 from .logger import logger
+from .login import login
 
 
-def await_containerrun(session: kiveapi.KiveAPI,
-                       containerrun: Dict[str, object]) \
-        -> Dict[str, object]:
+def await_containerrun(containerrun: Dict[str, object]) -> Dict[str, object]:
     """
     Given a `KiveAPI instance and a container run, monitor the run
     for completion and return the completed run.
@@ -27,7 +25,8 @@ def await_containerrun(session: kiveapi.KiveAPI,
 
     last_state: str = ""
     while elapsed < MAX_WAIT:
-        containerrun = session.endpoints.containerruns.get(runid)
+        with login() as kive:
+            containerrun = kive.endpoints.containerruns.get(runid)
 
         state_obj = containerrun["state"]
         assert isinstance(state_obj, str)

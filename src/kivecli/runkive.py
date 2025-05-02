@@ -4,7 +4,7 @@ import argparse
 import sys
 import hashlib
 from typing import cast, Sequence, BinaryIO, Dict, Iterable, Optional, \
-    NoReturn, Union
+    NoReturn, Union, Iterator
 from pathlib import Path
 
 import kiveapi
@@ -74,19 +74,20 @@ def find_name_and_permissions_match(items: Iterable[Dict[str, object]],
     return None
 
 
-def create_batch(kive: kiveapi.KiveAPI, name: str) -> Dict[str, object]:
-    description = ''
-    old_batches = kive.endpoints.batches.filter('name', name)
-    batch = find_name_and_permissions_match(old_batches, name, 'batch')
+def create_batch(name: str) -> Dict[str, object]:
+    with login() as kive:
+        description = ''
+        old_batches = kive.endpoints.batches.filter('name', name)
+        batch = find_name_and_permissions_match(old_batches, name, 'batch')
 
-    if batch is None:
-        batch = kive.endpoints.batches.post(json=dict(
-            name=name,
-            description=description,
-            groups_allowed=ALLOWED_GROUPS))
-        logger.debug("Created new batch named %s.", escape(name))
-    else:
-        logger.debug("Found existing batch named %s.", escape(name))
+        if batch is None:
+            batch = kive.endpoints.batches.post(json=dict(
+                name=name,
+                description=description,
+                groups_allowed=ALLOWED_GROUPS))
+            logger.debug("Created new batch named %s.", escape(name))
+        else:
+            logger.debug("Found existing batch named %s.", escape(name))
 
     return batch
 
@@ -120,13 +121,10 @@ def find_kive_dataset(self: kiveapi.KiveAPI,
         type_name='dataset')
 
 
-def find_kive_containerapp(kive: kiveapi.KiveAPI,
-                           app_id: Optional[str],
-                           ) \
-                           -> Dict[str, object]:
-
+def find_kive_containerapp(app_id: Optional[str]) -> Dict[str, object]:
     if app_id is not None:
-        ret: Dict[str, object] = kive.endpoints.containerapps.get(app_id)
+        with login() as kive:
+            ret: Dict[str, object] = kive.endpoints.containerapps.get(app_id)
         return ret
 
     raise UserError("Value for app id must be provided.")
@@ -199,23 +197,22 @@ def upload_or_retrieve_dataset(session: kiveapi.KiveAPI,
     return None
 
 
-def get_input_datasets(kive: kiveapi.KiveAPI,
-                       inputs: Iterable[PathOrURL]) \
-        -> Iterable[Dataset]:
+def get_input_datasets(inputs: Iterable[PathOrURL]) -> Iterator[Dataset]:
+    with login() as kive:
+        for arg in inputs:
+            if isinstance(arg, Path):
+                name: Union[str, URL] = arg.name
+            else:
+                name = arg
 
-    for arg in inputs:
-        if isinstance(arg, Path):
-            name: Union[str, URL] = arg.name
-        else:
-            name = arg
+            dataset = upload_or_retrieve_dataset(kive,
+                                                 name, arg,
+                                                 users=None,
+                                                 groups=ALLOWED_GROUPS)
+            if dataset is None:
+                raise UserError("Could not find dataset for %s.", escape(arg))
 
-        dataset = upload_or_retrieve_dataset(kive, name, arg,
-                                             users=None,
-                                             groups=ALLOWED_GROUPS)
-        if dataset is None:
-            raise UserError("Could not find dataset for %s.", escape(arg))
-
-        yield dataset
+            yield dataset
 
 
 def main_logged_in(kive: kiveapi.KiveAPI,
@@ -230,7 +227,7 @@ def main_logged_in(kive: kiveapi.KiveAPI,
                    filefilter: RunFilesFilter,
                    ) -> int:
     # Get the app from a container family.
-    app = find_kive_containerapp(kive, str(app_id))
+    app = find_kive_containerapp(str(app_id))
     app_link = URL(kive.server_url + app["absolute_url"])
     app_name: str = str(app["name"])
     app_container: str = str(app["container_name"])
@@ -258,7 +255,7 @@ def main_logged_in(kive: kiveapi.KiveAPI,
                      escape(filename), escape(kive_name))
 
     appargs_urls = [x["url"] for x in input_appargs]
-    input_datasets = list(get_input_datasets(kive, inputs))
+    input_datasets = list(get_input_datasets(inputs))
 
     datasets_urls = [x.raw["url"] for x in input_datasets]
     dataset_list = [
@@ -282,7 +279,7 @@ def main_logged_in(kive: kiveapi.KiveAPI,
     }
 
     if batch is not None:
-        kivebatch = create_batch(kive, batch)
+        kivebatch = create_batch(batch)
         runspec["batch"] = kivebatch["url"]
 
     logger.debug("Starting the run.")
@@ -292,10 +289,9 @@ def main_logged_in(kive: kiveapi.KiveAPI,
                  escape(run_name_top), escape(url))
 
     if not nowait:
-        await_containerrun(kive, containerrun)
+        await_containerrun(containerrun)
         if output is not None:
             kivedownload.main_after_wait(
-                kive=kive,
                 output=output,
                 containerrun=containerrun,
                 filefilter=filefilter,

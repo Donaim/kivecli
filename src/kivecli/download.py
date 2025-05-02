@@ -4,8 +4,6 @@ import argparse
 import os
 from typing import Sequence, Dict, Iterable
 
-import kiveapi
-
 from .logger import logger
 from .dirpath import dir_path, DirPath
 from .mainwrap import mainwrap
@@ -48,8 +46,7 @@ def download_results(datasets: Iterable[Dataset],
         dataset.download(output)
 
 
-def main_after_wait(kive: kiveapi.KiveAPI,
-                    output: DirPath,
+def main_after_wait(output: DirPath,
                     containerrun: Dict[str, object],
                     filefilter: RunFilesFilter,
                     ) -> int:
@@ -64,45 +61,40 @@ def main_after_wait(kive: kiveapi.KiveAPI,
     return 0
 
 
-def main_with_run(kive: kiveapi.KiveAPI,
-                  output: DirPath,
+def main_with_run(output: DirPath,
                   containerrun: Dict[str, object],
                   nowait: bool,
                   filefilter: RunFilesFilter,
                   ) -> int:
 
     if not nowait:
-        await_containerrun(kive, containerrun)
+        await_containerrun(containerrun)
 
     return main_after_wait(
-        kive=kive,
         output=output,
         containerrun=containerrun,
         filefilter=filefilter,
     )
 
 
-def main_parsed(kive: kiveapi.KiveAPI,
-                output: DirPath,
+def main_parsed(output: DirPath,
                 run_id: int,
                 nowait: bool,
                 filefilter: RunFilesFilter,
                 ) -> int:
-
-    containerrun = find_run(kive, run_id)
-    return main_with_run(kive, output, containerrun, nowait, filefilter)
+    with login():
+        containerrun = find_run(run_id)
+        return main_with_run(output, containerrun, nowait, filefilter)
 
 
 def main(argv: Sequence[str]) -> int:
     parser = cli_parser()
     args = parse_cli(parser, argv)
-    with login() as kive:
-        return main_parsed(kive=kive,
-                           output=args.output,
-                           run_id=args.run_id,
-                           nowait=args.nowait,
-                           filefilter=args.filefilter,
-                           )
+    return main_parsed(output=args.output,
+                       run_id=args.run_id,
+                       nowait=args.nowait,
+                       filefilter=args.filefilter,
+                       )
 
 
 def cli() -> None:

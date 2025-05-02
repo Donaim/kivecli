@@ -29,7 +29,7 @@ def main(argv: Sequence[str]) -> int:
     args = parse_cli(parser, argv)
 
     with login() as kive:
-        containerrun = find_run(kive, args.run_id)
+        containerrun = find_run(args.run_id)
         print_run(containerrun)
         end_time = containerrun['end_time']
         if end_time is not None:
