@@ -79,8 +79,8 @@ def fetch_paginated_results(query: Mapping[str, object]) \
                 break
 
 
-def findbatches(name: Optional[str],
-                description: Optional[str],
+def findbatches(name: Optional[str] = None,
+                description: Optional[str] = None,
                 page_size: int = DEFAULT_PAGESIZE,
                 ) -> Iterator[Mapping[str, object]]:
     query = build_search_query(name=name,
@@ -95,8 +95,8 @@ def findbatches(name: Optional[str],
         raise UserError("An error occurred while searching: %s", err)
 
 
-def main_typed(name: Optional[str],
-               description: Optional[str],
+def main_typed(name: Optional[str] = None,
+               description: Optional[str] = None,
                page_size: int = DEFAULT_PAGESIZE,
                is_json: bool = False,
                ) -> None:
