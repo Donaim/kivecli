@@ -2,7 +2,7 @@
 
 import argparse
 import json
-from typing import Dict, Sequence, Iterator
+from typing import Dict, Sequence, Iterator, Optional
 import sys
 
 from .mainwrap import mainwrap
@@ -30,11 +30,14 @@ def cli_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def build_search_query(args: argparse.Namespace) -> Dict[str, object]:
-    query: Dict[str, object] = {'page_size': int(str(args.page_size))}
+def build_search_query(name: Optional[str],
+                       description: Optional[str],
+                       page_size: int,
+                       ) -> Dict[str, object]:
+    query: Dict[str, object] = {'page_size': page_size}
 
-    for i, (key, val) in enumerate([('name', args.name),
-                                    ('description', args.description),
+    for i, (key, val) in enumerate([('name', name),
+                                    ('description', description),
                                     ]):
         query[f'filters[{i}][key]'] = key
         query[f'filters[{i}][val]'] = val
@@ -73,19 +76,22 @@ def fetch_paginated_results(query: Dict[str, object]) \
                 break
 
 
-def main(argv: Sequence[str]) -> int:
-    parser = cli_parser()
-    args = parse_cli(parser, argv)
+def main_typed(name: Optional[str],
+               description: Optional[str],
+               page_size: int = 1000,
+               is_json: bool = False,
+               ) -> None:
 
-    query = build_search_query(args)
+    query = build_search_query(name=name,
+                               description=description,
+                               page_size=page_size,
+                               )
     logger.debug("Built search query %r.", query)
 
     try:
         batches = fetch_paginated_results(query)
     except Exception as err:
         raise UserError("An error occurred while searching: %s", err)
-
-    is_json: bool = args.json
 
     if is_json:
         sys.stdout.write("[")
@@ -103,6 +109,11 @@ def main(argv: Sequence[str]) -> int:
 
     sys.stdout.flush()
 
+
+def main(argv: Sequence[str]) -> int:
+    parser = cli_parser()
+    args = parse_cli(parser, argv)
+    main_typed(args.name, args.description, args.page_size, args.json)
     return 0
 
 
