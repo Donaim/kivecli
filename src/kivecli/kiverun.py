@@ -80,12 +80,12 @@ class KiveRun:
 
     @staticmethod
     def get(id: int) -> Optional['KiveRun']:
-        try:
-            with login() as kive:
+        with login() as kive:
+            try:
                 run = kive.endpoints.containerruns.get(id)
-                return KiveRun.from_json(run)
-        except kiveapi.errors.KiveServerException:
-            return None
+            except kiveapi.errors.KiveServerException:
+                return None
+        return KiveRun.from_json(run)
 
     @cached_property
     def raw(self) -> Mapping[str, object]:
