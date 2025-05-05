@@ -65,8 +65,6 @@ def fetch_paginated_results(query: Mapping[str, object]) \
                 for raw in data['results']:
                     yield KiveBatch.from_json(raw)
 
-                sys.stdout.flush()
-
                 url = data.get('next')
                 if not url:
                     break
@@ -116,6 +114,7 @@ def main_typed(name: Optional[str] = None,
             if i > 0:
                 sys.stdout.write(",")
             run.dump(sys.stdout)
+            sys.stdout.flush()
         else:
             print(run.id)
 
