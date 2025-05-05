@@ -4,9 +4,12 @@ from typing import Optional, Mapping, TextIO
 from datetime import datetime
 from functools import cached_property
 import json
+import kiveapi
 
 from .runstate import RunState
 from .runid import RunId
+from .url import URL
+from .login import login
 
 
 @dataclass(frozen=True)
@@ -27,6 +30,12 @@ class KiveRun:
     # The `end_time` is None if the run has not yet started or finished.
     # Ex. if in state "RUNNING".
     end_time: Optional[datetime]
+
+    # Name given to this run
+    name: str
+
+    # The URL for this run.
+    url: URL
 
     # The container app that this KiveRun is performed by.
     app_name: str
@@ -52,17 +61,31 @@ class KiveRun:
         else:
             assert isinstance(end_time_obj, str)
             end_time = datetime.fromisoformat(end_time_obj)
-            app_name = raw["app_name"]
-            batch_name = raw["batch_name"]
+
+        name = str(raw["name"])
+        url = URL(str(raw["url"]))
+        app_name = str(raw["app_name"])
+        batch_name = str(raw["batch_name"])
 
         return KiveRun(_original_raw=raw,
                        id=id,
                        state=state,
                        start_time=start_time,
                        end_time=end_time,
-                       app_name=str(app_name),
-                       batch_name=str(batch_name),
+                       name=name,
+                       url=url,
+                       app_name=app_name,
+                       batch_name=batch_name,
                        )
+
+    @staticmethod
+    def get(id: int) -> Optional['KiveRun']:
+        try:
+            with login() as kive:
+                run = kive.endpoints.containerruns.get(id)
+                return KiveRun.from_json(run)
+        except kiveapi.errors.KiveServerException:
+            return None
 
     @cached_property
     def raw(self) -> Mapping[str, object]:

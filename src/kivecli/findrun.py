@@ -1,7 +1,6 @@
 
 import argparse
-from typing import Dict, Sequence
-import kiveapi
+from typing import Sequence
 import sys
 import json
 
@@ -11,22 +10,17 @@ from .login import login
 from .usererror import UserError
 from .logger import logger
 from .escape import escape
-from .url import URL
+from .kiverun import KiveRun
 
 
-def find_run(run_id: int) -> Dict[str, object]:
-    try:
-        with login() as kive:
-            containerrun: Dict[str, object] \
-                = kive.endpoints.containerruns.get(run_id)
-    except kiveapi.errors.KiveServerException as ex:
-        raise UserError("Run with id %s not found: %s", run_id, ex) from ex
+def find_run(run_id: int) -> KiveRun:
+    run = KiveRun.get(run_id)
+    if run is None:
+        raise UserError("Run with id %s not found.", run_id)
 
-    url: str = str(containerrun["url"])
-    name: str = str(containerrun["name"])
     logger.debug("Found run with id %s and name %s at %s.",
-                 run_id, escape(name), escape(URL(url)))
-    return containerrun
+                 run_id, escape(run.name), escape(run.url))
+    return run
 
 
 def cli_parser() -> argparse.ArgumentParser:

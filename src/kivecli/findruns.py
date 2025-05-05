@@ -98,7 +98,7 @@ def main(argv: Sequence[str]) -> int:
                 sys.stdout.write(",")
             run.dump(sys.stdout)
         else:
-            print(run.id.value)
+            print(run.id)
 
     if is_json:
         sys.stdout.write("]")
