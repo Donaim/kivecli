@@ -60,7 +60,7 @@ def fetch_paginated_results(query: Mapping[str, object]) \
                     response.raise_for_status()
                     data = response.json()
                 else:
-                    data = kive.endpoints.batches.get(params=query)
+                    data = kive.endpoints.batches.filter(params=query)
 
                 for raw in data['results']:
                     yield KiveBatch.from_json(raw)
