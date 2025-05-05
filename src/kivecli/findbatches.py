@@ -1,7 +1,6 @@
 #! /usr/bin/env python3
 
 import argparse
-import json
 from typing import Mapping, Sequence, Iterator, Optional, MutableMapping
 import sys
 
@@ -10,6 +9,7 @@ from .parsecli import parse_cli
 from .login import login
 from .usererror import UserError
 from .logger import logger
+from .kivebatch import KiveBatch
 
 import kiveapi
 
@@ -49,7 +49,7 @@ def build_search_query(name: Optional[str],
 
 
 def fetch_paginated_results(query: Mapping[str, object]) \
-        -> Iterator[Mapping[str, object]]:
+        -> Iterator[KiveBatch]:
 
     with login() as kive:
         url = None
@@ -62,7 +62,9 @@ def fetch_paginated_results(query: Mapping[str, object]) \
                 else:
                     data = kive.endpoints.batches.get(params=query)
 
-                yield from data['results']
+                for raw in data['results']:
+                    yield KiveBatch.from_json(raw)
+
                 sys.stdout.flush()
 
                 url = data.get('next')
@@ -82,7 +84,7 @@ def fetch_paginated_results(query: Mapping[str, object]) \
 def findbatches(name: Optional[str] = None,
                 description: Optional[str] = None,
                 page_size: int = DEFAULT_PAGESIZE,
-                ) -> Iterator[Mapping[str, object]]:
+                ) -> Iterator[KiveBatch]:
     query = build_search_query(name=name,
                                description=description,
                                page_size=page_size,
@@ -113,9 +115,9 @@ def main_typed(name: Optional[str] = None,
         if is_json:
             if i > 0:
                 sys.stdout.write(",")
-            json.dump(run, sys.stdout, indent=2)
+            run.dump(sys.stdout)
         else:
-            print(run["id"])
+            print(run.id)
 
     if is_json:
         sys.stdout.write("]")

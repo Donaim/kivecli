@@ -1,13 +1,11 @@
 
 from dataclasses import dataclass
-from typing import Optional, Mapping, TextIO, Sequence
+from typing import Mapping, TextIO, Sequence
 from functools import cached_property
 import json
-import kiveapi
 
 from .batchid import BatchId
 from .url import URL
-from .login import login
 from .kiverun import KiveRun
 
 
@@ -50,15 +48,6 @@ class KiveBatch:
                          url=url,
                          runs=runs,
                          )
-
-    @staticmethod
-    def get(id: int) -> Optional['KiveBatch']:
-        with login() as kive:
-            try:
-                run = kive.endpoints.containerruns.get(id)
-            except kiveapi.errors.KiveServerException:
-                return None
-        return KiveBatch.from_json(run)
 
     @cached_property
     def raw(self) -> Mapping[str, object]:
