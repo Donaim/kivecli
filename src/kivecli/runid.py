@@ -3,6 +3,8 @@ A wrapper for KiveRun.id that prevents us from doing arithmetic or
 anything unorthodox on it.
 """
 
-from typing import NewType
+from typing import NamedTuple
 
-RunId = NewType('RunId', int)
+
+class RunId(NamedTuple):
+    value: int

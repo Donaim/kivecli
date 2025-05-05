@@ -54,9 +54,6 @@ class KiveRun:
             app_name = raw["app_name"]
             batch_name = raw["batch_name"]
 
-            id2 = id + id
-            assert id2 > 0
-
             return KiveRun(_original_raw=raw,
                            id=id,
                            state=state,
@@ -69,7 +66,7 @@ class KiveRun:
     @cached_property
     def raw(self) -> Mapping[str, object]:
         ret = self._original_raw.copy()
-        ret["id"] = self.id
+        ret["id"] = self.id.value
         ret["state"] = self.state.value
         if self.start_time is None:
             ret["start_time"] = None
