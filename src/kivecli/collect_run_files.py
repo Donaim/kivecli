@@ -1,20 +1,20 @@
 
-from typing import Mapping, Iterator
+from typing import Iterator
 
 from .logger import logger
-from .url import URL
 from .escape import escape
 from .dataset import Dataset
 from .datasetinfo import DatasetInfo
 from .runfilesfilter import RunFilesFilter
 from .login import login
+from .kiverun import KiveRun
 
 
-def collect_run_files(containerrun: Mapping[str, object],
+def collect_run_files(containerrun: KiveRun,
                       filefilter: RunFilesFilter,
                       ) -> Iterator[Dataset]:
 
-    dataset_list = URL(str(containerrun["dataset_list"]))
+    dataset_list = containerrun.dataset_list
     with login():
         for run_dataset in DatasetInfo.from_run(dataset_list):
             if filefilter.matches(run_dataset):

@@ -1,13 +1,14 @@
 #! /usr/bin/env python3
 
 import argparse
-from typing import Sequence, Dict
+from typing import Sequence
 
 from .mainwrap import mainwrap
 from .parsecli import parse_cli
 from .login import login
 from .findrun import find_run
 from .logger import logger
+from .kiverun import KiveRun
 
 
 def cli_parser() -> argparse.ArgumentParser:
@@ -17,11 +18,11 @@ def cli_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def print_run(run: Dict[str, object]) -> None:
-    state = run['state']
-    end_time = run['end_time']
+def print_run(run: KiveRun) -> None:
+    state = run.state
+    end_time = run.end_time
     logger.info("Run in state %r with end_time %r.",
-                state, end_time)
+                state.value, end_time)
 
 
 def main(argv: Sequence[str]) -> int:
@@ -31,15 +32,14 @@ def main(argv: Sequence[str]) -> int:
     with login() as kive:
         containerrun = find_run(args.run_id)
         print_run(containerrun)
-        end_time = containerrun['end_time']
-        if end_time is not None:
+        if containerrun.is_finished:
             logger.info("Already finished.")
             return 0
 
         data = {
             "is_stop_requested": True,
         }
-        runid = str(containerrun['id'])
+        runid = containerrun.id.value
         result = kive.endpoints.containerruns.patch(runid, json=data)
         print_run(result)
         return 0

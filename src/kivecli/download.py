@@ -2,7 +2,7 @@
 
 import argparse
 import os
-from typing import Sequence, Dict, Iterable
+from typing import Sequence, Iterable
 
 from .logger import logger
 from .dirpath import dir_path, DirPath
@@ -16,6 +16,7 @@ from .escape import escape
 from .usererror import UserError
 from .await_containerrrun import await_containerrun
 from .runfilesfilter import RunFilesFilter
+from .kiverun import KiveRun
 
 
 def cli_parser() -> argparse.ArgumentParser:
@@ -47,14 +48,14 @@ def download_results(datasets: Iterable[Dataset],
 
 
 def main_after_wait(output: DirPath,
-                    containerrun: Dict[str, object],
+                    containerrun: KiveRun,
                     filefilter: RunFilesFilter,
                     ) -> int:
 
     datasets = list(collect_run_files(containerrun, filefilter))
     if len(datasets) <= 0:
         raise UserError("Could not find any outputs for run with id %s.",
-                        containerrun["id"])
+                        containerrun.id)
 
     download_results(datasets, output)
 
@@ -62,7 +63,7 @@ def main_after_wait(output: DirPath,
 
 
 def main_with_run(output: DirPath,
-                  containerrun: Dict[str, object],
+                  containerrun: KiveRun,
                   nowait: bool,
                   filefilter: RunFilesFilter,
                   ) -> int:

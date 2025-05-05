@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from typing import Sequence, Iterator, List, Dict
+from typing import Sequence, Iterator, List
 
 import kivecli.runkive as runkive
 from .logger import logger
@@ -17,9 +17,10 @@ from .findrun import find_run
 from .collect_run_files import collect_run_files
 from .runfilesfilter import RunFilesFilter
 from .argumenttype import ArgumentType
+from .kiverun import KiveRun
 
 
-def collect_run_inputs(containerrun: Dict[str, object]) -> Iterator[URL]:
+def collect_run_inputs(containerrun: KiveRun) -> Iterator[URL]:
     filefilter = RunFilesFilter.make([ArgumentType.INPUT], '.*')
     for dataset in collect_run_files(containerrun, filefilter):
         yield dataset.url
@@ -78,7 +79,7 @@ def main(argv: Sequence[str]) -> int:
 
     with login():
         containerrun = find_run(args.run_id)
-        orig_run_name = str(containerrun["name"])
+        orig_run_name = containerrun.name
         run_name = get_run_name(orig_run_name)
 
         urls = list(collect_run_inputs(containerrun))

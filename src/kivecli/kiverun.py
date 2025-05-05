@@ -43,6 +43,9 @@ class KiveRun:
     # The batch that this KiveRun was performed at, if any.
     batch_name: Optional[str]
 
+    # The URL for this run's datasets.
+    dataset_list: URL
+
     @staticmethod
     def from_json(raw: Mapping[str, object]) -> 'KiveRun':
         id_obj = raw['id']
@@ -66,6 +69,7 @@ class KiveRun:
         url = URL(str(raw["url"]))
         app_name = str(raw["app_name"])
         batch_name = str(raw["batch_name"])
+        dataset_list = URL(str(raw["dataset_list"]))
 
         return KiveRun(_original_raw=raw,
                        id=id,
@@ -76,6 +80,7 @@ class KiveRun:
                        url=url,
                        app_name=app_name,
                        batch_name=batch_name,
+                       dataset_list=dataset_list,
                        )
 
     @staticmethod
@@ -104,7 +109,12 @@ class KiveRun:
         ret["url"] = self.url.value
         ret["app_name"] = self.app_name
         ret["batch_name"] = self.batch_name
+        ret["dataset_list"] = self.dataset_list.value
         return ret
 
     def dump(self, out: TextIO) -> None:
         json.dump(self.raw, out, indent='\t')
+
+    @cached_property
+    def is_finished(self) -> bool:
+        return self.end_time is not None
