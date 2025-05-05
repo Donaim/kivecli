@@ -64,7 +64,8 @@ class KiveRun:
         else:
             assert isinstance(start_time_obj, str)
             start_time = datetime.fromisoformat(start_time_obj)
-            end_time_obj = raw["end_time"]
+
+        end_time_obj = raw["end_time"]
         if end_time_obj is None:
             end_time = None
         else:
