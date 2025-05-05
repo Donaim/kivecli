@@ -100,6 +100,8 @@ class KiveRun:
             ret["end_time"] = None
         else:
             ret["end_time"] = self.end_time.isoformat()
+        ret["name"] = self.name
+        ret["url"] = self.url.value
         ret["app_name"] = self.app_name
         ret["batch_name"] = self.batch_name
         return ret
