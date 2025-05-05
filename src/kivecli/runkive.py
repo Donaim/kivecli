@@ -298,7 +298,7 @@ def main_logged_in(kive: kiveapi.KiveAPI,
                 filefilter=filefilter,
             )
 
-    log_list = kive.get(containerrun.log_list).json()
+    log_list = kive.get(containerrun.log_list.value).json()
     for log in log_list:
         if log["size"] == 0:
             logger.debug("Empty log of type %s.", escape(log["type"]))
