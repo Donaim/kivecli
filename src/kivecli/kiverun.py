@@ -70,6 +70,7 @@ class KiveRun:
     def raw(self) -> Mapping[str, object]:
         ret = self._original_raw.copy()
         ret["id"] = self.id
+        ret["state"] = self.state.value
         if self.start_time is None:
             ret["start_time"] = None
         else:
