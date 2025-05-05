@@ -2,7 +2,6 @@
 import argparse
 from typing import Sequence
 import sys
-import json
 
 from .mainwrap import mainwrap
 from .parsecli import parse_cli
@@ -38,7 +37,7 @@ def main_typed(run_id: int) -> None:
         except Exception as err:
             raise UserError("An error occurred while searching: %s", err)
 
-        json.dump(run, sys.stdout, indent=2)
+        run.dump(sys.stdout)
 
 
 def main(argv: Sequence[str]) -> int:
