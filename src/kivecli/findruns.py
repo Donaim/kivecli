@@ -2,7 +2,7 @@
 
 import argparse
 import json
-from typing import Dict, Sequence, Iterator
+from typing import Sequence, Iterator, Mapping
 import sys
 
 from .mainwrap import mainwrap
@@ -10,6 +10,7 @@ from .parsecli import parse_cli
 from .login import login
 from .usererror import UserError
 from .logger import logger
+from .kiverun import KiveRun
 
 import kiveapi
 
@@ -32,8 +33,8 @@ def cli_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def build_search_query(args: argparse.Namespace) -> Dict[str, object]:
-    query: Dict[str, object] = {'page_size': int(str(args.page_size))}
+def build_search_query(args: argparse.Namespace) -> Mapping[str, object]:
+    query: dict[str, object] = {'page_size': int(str(args.page_size))}
 
     if args.filter:
         for i, (key, val) in enumerate(args.filter):
@@ -43,8 +44,8 @@ def build_search_query(args: argparse.Namespace) -> Dict[str, object]:
     return query
 
 
-def fetch_paginated_results(query: Dict[str, object]) \
-        -> Iterator[Dict[str, object]]:
+def fetch_paginated_results(query: Mapping[str, object]) \
+        -> Iterator[KiveRun]:
 
     with login() as kive:
         url = None
@@ -57,7 +58,8 @@ def fetch_paginated_results(query: Dict[str, object]) \
                 else:
                     data = kive.endpoints.containerruns.get(params=query)
 
-                yield from data['results']
+                for run in data['results']:
+                    yield KiveRun.from_json(run)
                 sys.stdout.flush()
 
                 url = data.get('next')
@@ -95,9 +97,9 @@ def main(argv: Sequence[str]) -> int:
         if is_json:
             if i > 0:
                 sys.stdout.write(",")
-            json.dump(run, sys.stdout, indent=2)
+            run.dump(sys.stdout)
         else:
-            print(run["id"])
+            print(run.id.value)
 
     if is_json:
         sys.stdout.write("]")
