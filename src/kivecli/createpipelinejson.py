@@ -2,7 +2,7 @@
 
 import argparse
 import json
-from typing import Dict, Sequence, List, Union, TextIO
+from typing import Mapping, MutableMapping, Sequence, Union, TextIO
 import sys
 
 from .mainwrap import mainwrap
@@ -21,8 +21,8 @@ def cli_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def make_step_input(orig: Dict[str, str]) -> Dict[str, Union[str, int]]:
-    ret: Dict[str, Union[str, int]] = {}
+def make_step_input(orig: Mapping[str, str]) -> Mapping[str, Union[str, int]]:
+    ret: MutableMapping[str, Union[str, int]] = {}
     ret['dataset_name'] = orig['dataset_name']
     ret['source_dataset_name'] = orig['dataset_name']
     ret['source_step'] = 0
@@ -30,7 +30,7 @@ def make_step_input(orig: Dict[str, str]) -> Dict[str, Union[str, int]]:
 
 
 def print_pipeline_json(ninputs: int, noutputs: int, output: TextIO) -> None:
-    inputs: List[Dict[str, str]] = [
+    inputs: Sequence[Mapping[str, str]] = [
         {
             "dataset_name": "script",
         },
@@ -40,7 +40,7 @@ def print_pipeline_json(ninputs: int, noutputs: int, output: TextIO) -> None:
         } for i in range(ninputs)
     ]
 
-    outputs: List[Dict[str, Union[str, int]]] = [
+    outputs: Sequence[Mapping[str, Union[str, int]]] = [
         {
             "source_dataset_name": f"output{i + 1}",
             "dataset_name": f"output{i + 1}",
