@@ -19,3 +19,14 @@ class RunState(Enum):
     COMPLETE = "C"
     FAILED = "F"
     CANCELLED = "X"
+
+
+ACTIVE_STATES = (RunState.NEW,
+                 RunState.LOADING,
+                 RunState.RUNNING,
+                 RunState.SAVING,
+                 )
+
+FAIL_STATES = (RunState.FAILED,
+               RunState.CANCELLED,
+               )
