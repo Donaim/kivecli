@@ -1,6 +1,6 @@
 
 from dataclasses import dataclass
-from typing import Mapping, TextIO, Sequence
+from typing import Mapping, TextIO, Sequence, AbstractSet
 from functools import cached_property
 import json
 
@@ -23,6 +23,9 @@ class KiveBatch:
     # The URL for this run.
     url: URL
 
+    # The URL for this run.
+    groups_allowed: AbstractSet[str]
+
     # The batch that this KiveBatch was performed at, if any.
     runs: Sequence[KiveRun]
 
@@ -40,12 +43,16 @@ class KiveBatch:
             assert isinstance(raw, dict)
             return KiveRun.from_json(raw)
 
+        groups_allowed_obj = raw["groups_allowed"]
+        assert isinstance(groups_allowed_obj, list)
+        groups_allowed = frozenset(map(str, groups_allowed_obj))
         runs = tuple(parse_run(run) for run in runs_obj)
 
         return KiveBatch(_original_raw=raw,
                          id=id,
                          name=name,
                          url=url,
+                         groups_allowed=groups_allowed,
                          runs=runs,
                          )
 
@@ -55,6 +62,7 @@ class KiveBatch:
         ret["id"] = self.id.value
         ret["name"] = self.name
         ret["url"] = self.url.value
+        ret["groups_allowed"] = list(self.groups_allowed)
         ret["runs"] = list(run.raw for run in self.runs)
         return ret
 
