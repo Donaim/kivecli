@@ -3,7 +3,7 @@
 import argparse
 import sys
 import hashlib
-from typing import cast, Sequence, BinaryIO, Dict, Iterable, Optional, \
+from typing import cast, Sequence, BinaryIO, Mapping, Iterable, Optional, \
     NoReturn, Union, Iterator
 from pathlib import Path
 
@@ -22,6 +22,7 @@ from .url import URL
 from .escape import escape
 from .await_containerrrun import await_containerrun
 from .runfilesfilter import RunFilesFilter
+from .findbatches import findbatches
 import kivecli.download as kivedownload
 
 
@@ -60,25 +61,24 @@ def cli_parser() -> argparse.ArgumentParser:
 ALLOWED_GROUPS = ['Everyone']
 
 
-def find_name_and_permissions_match(items: Iterable[Dict[str, object]],
-                                    name: Optional[str],
+def find_name_and_permissions_match(items: Iterable[Mapping[str, object]],
                                     type_name: str) \
-                                -> Optional[Dict[str, object]]:
+                                -> Optional[Mapping[str, object]]:
     needed_groups = set(ALLOWED_GROUPS)
     for item in items:
         groups = cast(Iterable[str], item['groups_allowed'])
         missing_groups = needed_groups - set(groups)
-        if (name is None or item['name'] == name) and not missing_groups:
+        if not missing_groups:
             return item
 
     return None
 
 
-def create_batch(name: str) -> Dict[str, object]:
+def create_batch(name: str) -> Mapping[str, object]:
     with login() as kive:
         description = ''
-        old_batches = kive.endpoints.batches.filter('name', name)
-        batch = find_name_and_permissions_match(old_batches, name, 'batch')
+        old_batches = [batch.raw for batch in findbatches(name=name)]
+        batch = find_name_and_permissions_match(old_batches, 'batch')
 
         if batch is None:
             batch = kive.endpoints.batches.post(json=dict(
@@ -102,7 +102,7 @@ def calculate_md5_hash(source_file: BinaryIO) -> str:
 
 def find_kive_dataset(self: kiveapi.KiveAPI,
                       source_file: BinaryIO) \
-                      -> Optional[Dict[str, object]]:
+                      -> Optional[Mapping[str, object]]:
     """
     Search for a dataset in Kive by name and checksum.
 
@@ -115,16 +115,14 @@ def find_kive_dataset(self: kiveapi.KiveAPI,
         'md5', checksum,
         'uploaded', True)
 
-    return find_name_and_permissions_match(
-        datasets,
-        name=None,
-        type_name='dataset')
+    return find_name_and_permissions_match(datasets, type_name='dataset')
 
 
-def find_kive_containerapp(app_id: Optional[str]) -> Dict[str, object]:
+def find_kive_containerapp(app_id: Optional[str]) -> Mapping[str, object]:
     if app_id is not None:
         with login() as kive:
-            ret: Dict[str, object] = kive.endpoints.containerapps.get(app_id)
+            ret: Mapping[str, object] \
+                = kive.endpoints.containerapps.get(app_id)
         return ret
 
     raise UserError("Value for app id must be provided.")
