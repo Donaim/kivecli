@@ -1,5 +1,5 @@
 
-from typing import Iterator, Dict
+from typing import Iterator, Mapping
 from dataclasses import dataclass
 
 from .url import URL
@@ -21,7 +21,7 @@ class DatasetInfo:
             yield from coerced
 
     @staticmethod
-    def coerce(data: Dict[str, object]) -> 'DatasetInfo':
+    def coerce(data: Mapping[str, object]) -> 'DatasetInfo':
         argument_type = ArgumentType(str(data['argument_type']))
         argument_name = str(data['argument_name'])
         url = URL(str(data["dataset"]))
