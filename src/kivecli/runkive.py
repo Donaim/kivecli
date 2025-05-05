@@ -23,6 +23,8 @@ from .escape import escape
 from .await_containerrrun import await_containerrun
 from .runfilesfilter import RunFilesFilter
 from .findbatches import findbatches
+from .kiverun import KiveRun
+from .runstate import RunState
 import kivecli.download as kivedownload
 
 
@@ -281,8 +283,9 @@ def main_logged_in(kive: kiveapi.KiveAPI,
         runspec["batch"] = kivebatch["url"]
 
     logger.debug("Starting the run.")
-    containerrun = kive.endpoints.containerruns.post(json=runspec)
-    url = URL(kive.server_url + containerrun["absolute_url"])
+    containerrun = KiveRun.from_json(
+        kive.endpoints.containerruns.post(json=runspec))
+    url = URL(kive.server_url + containerrun.absolute_url.value)
     logger.debug("Started run named %s at %s.",
                  escape(run_name_top), escape(url))
 
@@ -295,7 +298,7 @@ def main_logged_in(kive: kiveapi.KiveAPI,
                 filefilter=filefilter,
             )
 
-    log_list = kive.get(containerrun["log_list"]).json()
+    log_list = kive.get(containerrun.log_list).json()
     for log in log_list:
         if log["size"] == 0:
             logger.debug("Empty log of type %s.", escape(log["type"]))
@@ -313,7 +316,7 @@ def main_logged_in(kive: kiveapi.KiveAPI,
             stderr.flush()
             logger.debug("Done with stderr.")
 
-    if nowait or containerrun["state"] == "C":
+    if nowait or containerrun.state == RunState.COMPLETE:
         return 0
     else:
         return 1

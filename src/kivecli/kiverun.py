@@ -37,6 +37,9 @@ class KiveRun:
     # The URL for this run.
     url: URL
 
+    # The absolute URL for this run.
+    absolute_url: URL
+
     # The container app that this KiveRun is performed by.
     app_name: str
 
@@ -45,6 +48,9 @@ class KiveRun:
 
     # The URL for this run's datasets.
     dataset_list: URL
+
+    # The URL for this run's logs.
+    log_list: URL
 
     @staticmethod
     def from_json(raw: Mapping[str, object]) -> 'KiveRun':
@@ -67,9 +73,11 @@ class KiveRun:
 
         name = str(raw["name"])
         url = URL(str(raw["url"]))
+        absolute_url = URL(str(raw["absolute_url"]))
         app_name = str(raw["app_name"])
         batch_name = str(raw["batch_name"])
         dataset_list = URL(str(raw["dataset_list"]))
+        log_list = URL(str(raw["log_list"]))
 
         return KiveRun(_original_raw=raw,
                        id=id,
@@ -78,9 +86,11 @@ class KiveRun:
                        end_time=end_time,
                        name=name,
                        url=url,
+                       absolute_url=absolute_url,
                        app_name=app_name,
                        batch_name=batch_name,
                        dataset_list=dataset_list,
+                       log_list=log_list,
                        )
 
     @staticmethod
