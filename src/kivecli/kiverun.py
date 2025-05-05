@@ -129,3 +129,8 @@ class KiveRun:
     @cached_property
     def is_finished(self) -> bool:
         return self.end_time is not None
+
+    def update(self) -> 'KiveRun':
+        with login() as kive:
+            new = kive.endpoints.containerruns.get(self.id.value)
+        return KiveRun.from_json(new)

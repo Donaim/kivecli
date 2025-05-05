@@ -3,7 +3,6 @@ import time
 from typing import Optional
 
 from .logger import logger
-from .login import login
 from .kiverun import KiveRun
 from .runstate import RunState, ACTIVE_STATES, FAIL_STATES
 
@@ -25,9 +24,7 @@ def await_containerrun(containerrun: KiveRun) -> KiveRun:
 
     last_state: Optional[RunState] = None
     while elapsed < MAX_WAIT:
-        with login() as kive:
-            containerrun = kive.endpoints.containerruns.get(runid)
-
+        containerrun = containerrun.update()
         state: RunState = containerrun.state
         elapsed = round(time.time() - starttime, 2)
 
