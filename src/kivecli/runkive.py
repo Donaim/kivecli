@@ -285,7 +285,7 @@ def main_logged_in(kive: kiveapi.KiveAPI,
     logger.debug("Starting the run.")
     containerrun = KiveRun.from_json(
         kive.endpoints.containerruns.post(json=runspec))
-    url = URL(kive.server_url + containerrun.absolute_url.value)
+    url = URL(kive.server_url + containerrun.absolute_url)
     logger.debug("Started run named %s at %s.",
                  escape(run_name_top), escape(url))
 

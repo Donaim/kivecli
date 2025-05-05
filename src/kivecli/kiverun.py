@@ -37,8 +37,8 @@ class KiveRun:
     # The URL for this run.
     url: URL
 
-    # The absolute URL for this run.
-    absolute_url: URL
+    # The after-domain part of the absolute URL for this run.
+    absolute_url: str
 
     # The container app that this KiveRun is performed by.
     app_name: str
@@ -74,7 +74,7 @@ class KiveRun:
 
         name = str(raw["name"])
         url = URL(str(raw["url"]))
-        absolute_url = URL(str(raw["absolute_url"]))
+        absolute_url = str(raw["absolute_url"])
         app_name = str(raw["app_name"])
         batch_name = str(raw["batch_name"])
         dataset_list = URL(str(raw["dataset_list"]))
