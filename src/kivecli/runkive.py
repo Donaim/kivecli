@@ -242,8 +242,8 @@ def main_logged_in(kive: kiveapi.KiveAPI,
         raise UserError("At most %s inputs supported, but got %s.",
                         len(input_appargs), len(inputs))
     if len(inputs) < len(input_appargs):
-        raise UserError("At least %s inputs supported, but got %s.",
-                        len(input_appargs), len(inputs))
+        logger.warning("At least %s inputs supported, but got %s.",
+                       len(input_appargs), len(inputs))
 
     for (x, y) in zip(input_appargs, inputs):
         kive_name: str = x["name"]
