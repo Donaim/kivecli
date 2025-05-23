@@ -42,6 +42,9 @@ def build_search_query(name: Optional[str],
     for i, (key, val) in enumerate([('name', name),
                                     ('description', description),
                                     ]):
+        if val is None:
+            continue
+
         query[f'filters[{i}][key]'] = key
         query[f'filters[{i}][val]'] = val
 

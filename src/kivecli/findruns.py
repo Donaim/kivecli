@@ -37,6 +37,9 @@ def build_search_query(args: argparse.Namespace) -> Mapping[str, object]:
 
     if args.filter:
         for i, (key, val) in enumerate(args.filter):
+            if val is None:
+                continue
+
             query[f'filters[{i}][key]'] = key
             query[f'filters[{i}][val]'] = val
 
