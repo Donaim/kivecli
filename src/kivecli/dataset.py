@@ -62,12 +62,10 @@ class Dataset:
         Finds all datasets that have the same MD5 hash as self.
         """
 
+        from .finddatasets import build_search_query, fetch_paginated_results
         md5 = self.md5checksum
-
-        with login() as kive:
-            raw_datasets = kive.endpoints.datasets.filter('md5', md5)
-            for raw in raw_datasets:
-                yield Dataset._from_json(raw)
+        query = build_search_query(md5=md5)
+        yield from fetch_paginated_results(query)
 
     def download(self, output: DirPath) -> None:
         with login() as kive:

@@ -10,6 +10,7 @@ from .login import login
 from .usererror import UserError
 from .logger import logger
 from .dataset import Dataset
+from .md5checksum import MD5Checksum
 
 import kiveapi
 
@@ -32,9 +33,9 @@ def cli_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def build_search_query(name: Optional[str],
-                       md5: Optional[str],
-                       page_size: int,
+def build_search_query(page_size: int = DEFAULT_PAGESIZE,
+                       name: Optional[str] = None,
+                       md5: Optional[MD5Checksum] = None,
                        ) -> Mapping[str, object]:
     query: MutableMapping[str, object] = {'page_size': page_size}
 
@@ -82,7 +83,7 @@ def fetch_paginated_results(query: Mapping[str, object]) \
 
 
 def finddatasets(name: Optional[str] = None,
-                 md5: Optional[str] = None,
+                 md5: Optional[MD5Checksum] = None,
                  page_size: int = DEFAULT_PAGESIZE,
                  ) -> Iterator[Dataset]:
     query = build_search_query(name=name,
@@ -98,7 +99,7 @@ def finddatasets(name: Optional[str] = None,
 
 
 def main_typed(name: Optional[str] = None,
-               md5: Optional[str] = None,
+               md5: Optional[MD5Checksum] = None,
                page_size: int = DEFAULT_PAGESIZE,
                is_json: bool = False,
                ) -> None:
@@ -129,7 +130,8 @@ def main_typed(name: Optional[str] = None,
 def main(argv: Sequence[str]) -> int:
     parser = cli_parser()
     args = parse_cli(parser, argv)
-    main_typed(args.name, args.md5, args.page_size, args.json)
+    md5 = MD5Checksum(args.md5)
+    main_typed(args.name, md5, args.page_size, args.json)
     return 0
 
 
