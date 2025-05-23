@@ -25,7 +25,7 @@ def collect_run_files(containerrun: KiveRun,
 
                 logger.debug("Found dataset at %s for %s.",
                              escape(dataset.url),
-                             escape(dataset.name))
+                             escape(filename))
                 logger.debug("File %s corresponds to Kive argument name %s.",
                              escape(filename),
                              escape(run_dataset.argument_name))
@@ -35,18 +35,18 @@ def collect_run_files(containerrun: KiveRun,
                 if dataset.is_purged:
                     logger.debug("File %s is purged. "
                                  "Trying to find an alternative.",
-                                 escape(dataset.name))
+                                 escape(filename))
 
                     new = dataset.update()
                     if new is None:
                         raise UserError(
                             "File %s is purged "
                             "and alternative cannot be found.",
-                            escape(dataset.name))
+                            escape(filename))
 
                     logger.debug("Found alternative for file %s"
                                  " - it is file %s.",
-                                 escape(dataset.name), escape(new.name))
+                                 escape(filename), escape(new.name))
                     dataset = new
 
                 yield dataset
