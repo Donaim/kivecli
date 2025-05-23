@@ -59,7 +59,6 @@ def fetch_paginated_results(query: Mapping[str, object]) \
 
                 for run in data['results']:
                     yield KiveRun.from_json(run)
-                sys.stdout.flush()
 
                 url = data.get('next')
                 if not url:
@@ -97,6 +96,7 @@ def main(argv: Sequence[str]) -> int:
             if i > 0:
                 sys.stdout.write(",")
             run.dump(sys.stdout)
+            sys.stdout.flush()
         else:
             print(run.id)
 
