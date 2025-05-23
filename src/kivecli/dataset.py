@@ -17,6 +17,7 @@ class Dataset:
     url: URL
     download_url: URL
     md5checksum: MD5Checksum
+    is_purged: bool
 
     @staticmethod
     def get(url: URL) -> 'Dataset':
@@ -25,11 +26,13 @@ class Dataset:
             md5checksum = MD5Checksum(raw['MD5_checksum'])
             name = raw['name']
             download_url = raw['download_url']
+            is_purged = raw['is_purged']
             return Dataset(raw=raw,
                            name=name,
                            url=url,
                            download_url=download_url,
                            md5checksum=md5checksum,
+                           is_purged=is_purged,
                            )
 
     def download(self, output: DirPath) -> None:
