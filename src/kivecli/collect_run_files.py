@@ -8,6 +8,7 @@ from .datasetinfo import DatasetInfo
 from .runfilesfilter import RunFilesFilter
 from .login import login
 from .kiverun import KiveRun
+from .usererror import UserError
 
 
 def collect_run_files(containerrun: KiveRun,
@@ -32,8 +33,20 @@ def collect_run_files(containerrun: KiveRun,
                              escape(run_dataset.argument_name), checksum)
 
                 if dataset.is_purged:
-                    logger.debug("Dataset %s is purged. "
+                    logger.debug("File %s is purged. "
                                  "Trying to find an alternative.",
                                  escape(dataset.name))
+
+                    new = dataset.update()
+                    if new is None:
+                        raise UserError(
+                            "File %s is purged "
+                            "and alternative cannot be found.",
+                            escape(dataset.name))
+
+                    logger.debug("Found alternative for file %s"
+                                 " - it is file %s.",
+                                 escape(dataset.name), escape(new.name))
+                    dataset = new
 
                 yield dataset
