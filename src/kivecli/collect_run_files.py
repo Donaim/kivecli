@@ -31,4 +31,9 @@ def collect_run_files(containerrun: KiveRun,
                 logger.debug("Argument %s has MD5 hash %s.",
                              escape(run_dataset.argument_name), checksum)
 
+                if dataset.is_purged:
+                    logger.debug("Dataset %s is purged. "
+                                 "Trying to find an alternative.",
+                                 escape(dataset.name))
+
                 yield dataset

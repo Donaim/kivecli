@@ -2,8 +2,7 @@
 
 import argparse
 import sys
-import hashlib
-from typing import cast, Sequence, BinaryIO, Mapping, Iterable, Optional, \
+from typing import Sequence, BinaryIO, Mapping, Iterable, Optional, \
     NoReturn, Union, Iterator
 from pathlib import Path
 
@@ -25,6 +24,8 @@ from .runfilesfilter import RunFilesFilter
 from .findbatches import findbatches
 from .kiverun import KiveRun
 from .runstate import RunState
+from .find_dataset import \
+    find_kive_dataset, ALLOWED_GROUPS, find_name_and_permissions_match
 import kivecli.download as kivedownload
 
 
@@ -60,22 +61,6 @@ def cli_parser() -> argparse.ArgumentParser:
     return parser
 
 
-ALLOWED_GROUPS = ['Everyone']
-
-
-def find_name_and_permissions_match(items: Iterable[Mapping[str, object]],
-                                    type_name: str) \
-                                -> Optional[Mapping[str, object]]:
-    needed_groups = set(ALLOWED_GROUPS)
-    for item in items:
-        groups = cast(Iterable[str], item['groups_allowed'])
-        missing_groups = needed_groups - set(groups)
-        if not missing_groups:
-            return item
-
-    return None
-
-
 def create_batch(name: str) -> Mapping[str, object]:
     with login() as kive:
         description = ''
@@ -92,32 +77,6 @@ def create_batch(name: str) -> Mapping[str, object]:
             logger.debug("Found existing batch named %s.", escape(name))
 
     return batch
-
-
-def calculate_md5_hash(source_file: BinaryIO) -> str:
-    chunk_size = 4096
-    digest = hashlib.md5()
-    for chunk in iter(lambda: source_file.read(chunk_size), b""):
-        digest.update(chunk)
-    return digest.hexdigest()
-
-
-def find_kive_dataset(self: kiveapi.KiveAPI,
-                      source_file: BinaryIO) \
-                      -> Optional[Mapping[str, object]]:
-    """
-    Search for a dataset in Kive by name and checksum.
-
-    :param source_file: open file object to read from
-    :return: the dataset object from the Kive API wrapper, or None
-    """
-
-    checksum = calculate_md5_hash(source_file)
-    datasets = self.endpoints.datasets.filter(
-        'md5', checksum,
-        'uploaded', True)
-
-    return find_name_and_permissions_match(datasets, type_name='dataset')
 
 
 def find_kive_containerapp(app_id: Optional[str]) -> Mapping[str, object]:
