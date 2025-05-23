@@ -46,7 +46,7 @@ def build_search_query(page_size: int = DEFAULT_PAGESIZE,
             continue
 
         query[f'filters[{i}][key]'] = key
-        query[f'filters[{i}][val]'] = val
+        query[f'filters[{i}][val]'] = str(val)
 
     return query
 
@@ -130,7 +130,7 @@ def main_typed(name: Optional[str] = None,
 def main(argv: Sequence[str]) -> int:
     parser = cli_parser()
     args = parse_cli(parser, argv)
-    md5 = MD5Checksum(args.md5)
+    md5 = args.md5 and MD5Checksum(args.md5)
     main_typed(args.name, md5, args.page_size, args.json)
     return 0
 
