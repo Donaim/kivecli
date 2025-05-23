@@ -1,6 +1,7 @@
 
 from dataclasses import dataclass
-from typing import Mapping, Iterator, Optional
+from typing import Mapping, Iterator, Optional, TextIO
+import json
 
 from .url import URL
 from .login import login
@@ -8,10 +9,12 @@ from .md5checksum import MD5Checksum
 from .dirpath import DirPath
 from .logger import logger
 from .escape import escape
+from .datasetid import DatasetId
 
 
 @dataclass(frozen=True)
 class Dataset:
+    id: DatasetId
     raw: Mapping[str, object]
     name: str
     url: URL
@@ -27,12 +30,14 @@ class Dataset:
 
     @staticmethod
     def _from_json(raw: Mapping[str, object]) -> 'Dataset':
+        id = DatasetId(int(str(raw['id'])))
         md5checksum = MD5Checksum(str(raw['MD5_checksum']))
         url = URL(str(raw['url']))
         name = str(raw['name'])
         download_url = URL(str(raw['download_url']))
         is_purged = bool(raw['is_purged'])
-        return Dataset(raw=raw,
+        return Dataset(id=id,
+                       raw=raw,
                        name=name,
                        url=url,
                        download_url=download_url,
@@ -71,3 +76,6 @@ class Dataset:
                          escape(self.name), escape(filepath))
             with open(filepath, "wb") as outf:
                 kive.download_file(outf, self.download_url)
+
+    def dump(self, out: TextIO) -> None:
+        json.dump(self.raw, out, indent='\t')
