@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.scripts]
-kivecli = "kivecli.main:cli"
+kivecli = "kivecli.__main__:cli"
 
 [project.optional-dependencies]
 test = [
