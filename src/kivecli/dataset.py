@@ -73,7 +73,7 @@ class Dataset:
             logger.debug("Downloading %s to %s.",
                          escape(self.name), escape(filepath))
             with open(filepath, "wb") as outf:
-                kive.download_file(outf, self.download_url)
+                kive.download_file(outf, self.download_url.value)
 
     def dump(self, out: TextIO) -> None:
         json.dump(self.raw, out, indent='\t')
