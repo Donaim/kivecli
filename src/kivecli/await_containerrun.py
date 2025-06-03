@@ -1,4 +1,3 @@
-
 import time
 from typing import Optional
 
@@ -8,10 +7,8 @@ from .runstate import RunState, ACTIVE_STATES, FAIL_STATES
 
 
 def await_containerrun(containerrun: KiveRun) -> KiveRun:
-    """
-    Given a `KiveAPI instance and a container run, monitor the run
-    for completion and return the completed run.
-    """
+    """Monitor a container run until it finishes and return the updated
+    ``KiveRun`` instance."""
 
     INTERVAL = 1.0
     MAX_WAIT = float("inf")
