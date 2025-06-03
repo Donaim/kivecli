@@ -1,14 +1,23 @@
-from types import SimpleNamespace
+from types import SimpleNamespace, ModuleType
 from pathlib import Path
 from contextlib import contextmanager
+import sys
 
-import pytest
+# Provide a dummy kiveapi module so imports succeed without network access.
+dummy_kiveapi = ModuleType("kiveapi")
+dummy_kiveapi.KiveAPI = object
+dummy_kiveapi.KiveAuthException = Exception
+dummy_kiveapi.KiveMalformedDataException = Exception
+dummy_kiveapi.dataset = ModuleType("kiveapi.dataset")
+dummy_kiveapi.dataset.Dataset = object
+sys.modules.setdefault("kiveapi", dummy_kiveapi)
+sys.modules.setdefault("kiveapi.dataset", dummy_kiveapi.dataset)
 
-import kivecli.runkive as runkive
-import kivecli.download as download
-import kivecli.findruns as findruns
-from kivecli.runfilesfilter import RunFilesFilter
-from kivecli.dirpath import DirPath
+import kivecli.runkive as runkive  # noqa: E402
+import kivecli.download as download  # noqa: E402
+import kivecli.findruns as findruns  # noqa: E402
+from kivecli.runfilesfilter import RunFilesFilter  # noqa: E402
+from kivecli.dirpath import DirPath  # noqa: E402
 
 
 def test_runkive_main_invokes_main_parsed(monkeypatch):
@@ -54,7 +63,12 @@ def test_download_main_parsed(monkeypatch):
 
     output_path = DirPath(Path("out"))
     ff = RunFilesFilter.default()
-    result = download.main_parsed(output_path, run_id=3, nowait=True, filefilter=ff)
+    result = download.main_parsed(
+        output_path,
+        run_id=3,
+        nowait=True,
+        filefilter=ff,
+    )
 
     assert result == 42
     assert called["run_id"] == 3
