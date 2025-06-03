@@ -40,7 +40,8 @@ def main(argv: Sequence[str]) -> int:
             "is_stop_requested": True,
         }
         runid = containerrun.id.value
-        result = kive.endpoints.containerruns.patch(runid, json=data)
+        result_raw = kive.endpoints.containerruns.patch(runid, json=data)
+        result = KiveRun.from_json(result_raw)
         print_run(result)
         return 0
 
