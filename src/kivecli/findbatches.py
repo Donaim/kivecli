@@ -39,14 +39,16 @@ def build_search_query(name: Optional[str],
                        ) -> Mapping[str, object]:
     query: MutableMapping[str, object] = {'page_size': page_size}
 
-    for i, (key, val) in enumerate([('name', name),
-                                    ('description', description),
-                                    ]):
+    i = 0
+    for (key, val) in [('name', name),
+                       ('description', description),
+                       ]:
         if val is None:
             continue
 
         query[f'filters[{i}][key]'] = key
         query[f'filters[{i}][val]'] = val
+        i += 1
 
     return query
 
