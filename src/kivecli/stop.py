@@ -21,7 +21,7 @@ def cli_parser() -> argparse.ArgumentParser:
 def print_run(run: KiveRun) -> None:
     state = run.state
     end_time = run.end_time
-    logger.info("Run in state %r with end_time %r.",
+    logger.info("Run in state %r with end_time %s.",
                 state.value, end_time)
 
 
