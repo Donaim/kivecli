@@ -29,7 +29,7 @@ def main(argv: Sequence[str]) -> int:
     parser = cli_parser()
     args = parse_cli(parser, argv)
 
-    with login() as kive:
+    with login():
         containerrun = find_run(args.run_id)
         print_run(containerrun)
         if containerrun.is_finished:
@@ -40,8 +40,7 @@ def main(argv: Sequence[str]) -> int:
             "is_stop_requested": True,
         }
         runid = containerrun.id.value
-        result_raw = kive.endpoints.containerruns.patch(runid, json=data)
-        result = KiveRun.from_json(result_raw)
+        result = KiveRun.post(runid, data)
         print_run(result)
         return 0
 

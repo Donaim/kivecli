@@ -103,6 +103,12 @@ class KiveRun:
                 return None
         return KiveRun.from_json(run)
 
+    @staticmethod
+    def post(id: int, data: Mapping[str, object]) -> 'KiveRun':
+        with login() as kive:
+            ret = kive.endpoints.containerruns.patch(id, json=data)
+        return KiveRun.from_json(ret)
+
     @cached_property
     def raw(self) -> Mapping[str, object]:
         ret = {k: v for k, v in self._original_raw.items()}
