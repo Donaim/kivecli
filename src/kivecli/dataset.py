@@ -52,6 +52,8 @@ class Dataset:
 
         datasets = self.iterate_isomorphic()
         for dataset in datasets:
+            if dataset.md5checksum != self.md5checksum:
+                raise ValueError("Bad query result", dataset)
             if not dataset.is_purged:
                 return dataset
 
