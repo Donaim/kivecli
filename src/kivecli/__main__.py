@@ -18,7 +18,8 @@ import kivecli.findapps as findapps
 from .mainwrap import mainwrap
 
 PROGRAMS = ["run", "rerun", "download", "watch", "createzipapp", "zip",
-            "findruns", "findrun", "stop", "findbatches", "finddatasets", "findapps"]
+            "findruns", "findrun", "stop", "findbatches", "finddatasets",
+            "findapps"]
 
 HELP_MESSAGE = """\
 usage: kivecli [-h] {programs} [arguments ...]
