@@ -14,10 +14,11 @@ import kivecli.findrun as findrun
 import kivecli.stop as stop
 import kivecli.findbatches as findbatches
 import kivecli.finddatasets as finddatasets
+import kivecli.findapps as findapps
 from .mainwrap import mainwrap
 
 PROGRAMS = ["run", "rerun", "download", "watch", "createzipapp", "zip",
-            "findruns", "findrun", "stop", "findbatches", "finddatasets"]
+            "findruns", "findrun", "stop", "findbatches", "finddatasets", "findapps"]
 
 HELP_MESSAGE = """\
 usage: kivecli [-h] {programs} [arguments ...]
@@ -86,6 +87,8 @@ def main(argv: Sequence[str]) -> int:
         return findbatches.main(arguments)
     elif program == "finddatasets":
         return finddatasets.main(arguments)
+    elif program == "findapps":
+        return findapps.main(arguments)
     else:
         raise RuntimeError(f"Unknown program value {repr(program)}")
 
