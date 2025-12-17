@@ -22,7 +22,8 @@ def cli_parser() -> argparse.ArgumentParser:
         description="Search for a Kive container app.")
 
     parser.add_argument("--name", help="Name of the container app contains.")
-    parser.add_argument("--container_name", help="Name of the parent container contains.")
+    parser.add_argument("--container_name",
+                        help="Name of the parent container contains.")
 
     parser.add_argument("--page_size", type=int, default=DEFAULT_PAGESIZE,
                         help="Number of results per page.")
