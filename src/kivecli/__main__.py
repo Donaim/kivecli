@@ -15,11 +15,12 @@ import kivecli.stop as stop
 import kivecli.findbatches as findbatches
 import kivecli.finddatasets as finddatasets
 import kivecli.findapps as findapps
+import kivecli.upload_dataset as upload_dataset
 from .mainwrap import mainwrap
 
 PROGRAMS = ["run", "rerun", "download", "watch", "createzipapp", "zip",
             "findruns", "findrun", "stop", "findbatches", "finddatasets",
-            "findapps"]
+            "findapps", "upload_dataset"]
 
 HELP_MESSAGE = """\
 usage: kivecli [-h] {programs} [arguments ...]
@@ -90,6 +91,8 @@ def main(argv: Sequence[str]) -> int:
         return finddatasets.main(arguments)
     elif program == "findapps":
         return findapps.main(arguments)
+    elif program == "upload_dataset":
+        return upload_dataset.main(arguments)
     else:
         raise RuntimeError(f"Unknown program value {repr(program)}")
 
