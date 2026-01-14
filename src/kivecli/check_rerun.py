@@ -247,9 +247,8 @@ def print_result_verbose(result: RerunCheckResult) -> None:
 def print_result_simple(result: RerunCheckResult) -> None:
     """Print simple result - just OK or ERROR."""
     if result.all_available:
-        print("OK")
+        pass
     else:
-        print("ERROR: Some inputs unavailable")
         for status in result.dataset_statuses:
             if not status.is_available:
                 print(
