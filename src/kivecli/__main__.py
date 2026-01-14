@@ -6,6 +6,7 @@ from typing import Sequence
 import kivecli.runkive as runkive
 import kivecli.zip as kiveclizip
 import kivecli.rerun as rerun
+import kivecli.check_rerun as check_rerun
 import kivecli.watch as watch
 import kivecli.createzipapp as createzipapp
 import kivecli.download as kivedownload
@@ -18,9 +19,9 @@ import kivecli.findapps as findapps
 import kivecli.upload_dataset as upload_dataset
 from .mainwrap import mainwrap
 
-PROGRAMS = ["run", "rerun", "download", "watch", "createzipapp", "zip",
-            "findruns", "findrun", "stop", "findbatches", "finddatasets",
-            "findapps", "upload_dataset"]
+PROGRAMS = ["run", "rerun", "check_rerun", "download", "watch",
+            "createzipapp", "zip", "findruns", "findrun", "stop",
+            "findbatches", "finddatasets", "findapps", "upload_dataset"]
 
 HELP_MESSAGE = """\
 usage: kivecli [-h] {programs} [arguments ...]
@@ -73,6 +74,8 @@ def main(argv: Sequence[str]) -> int:
         return kiveclizip.main(arguments)
     elif program == "rerun":
         return rerun.main(arguments)
+    elif program == "check_rerun":
+        return check_rerun.main(arguments)
     elif program == "watch":
         return watch.main(arguments)
     elif program == "createzipapp":
