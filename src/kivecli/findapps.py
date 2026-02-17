@@ -22,7 +22,7 @@ def cli_parser() -> argparse.ArgumentParser:
         description="Search for a Kive container app.")
 
     parser.add_argument("--name", help="Name of the container app contains.")
-    parser.add_argument("--container",
+    parser.add_argument("--container_name",
                         help="Name of the parent container contains.")
 
     parser.add_argument("--page_size", type=int, default=DEFAULT_PAGESIZE,
@@ -35,13 +35,13 @@ def cli_parser() -> argparse.ArgumentParser:
 
 def build_search_query(page_size: int = DEFAULT_PAGESIZE,
                        name: Optional[str] = None,
-                       container: Optional[str] = None,
+                       container_name: Optional[str] = None,
                        ) -> Mapping[str, object]:
     query: MutableMapping[str, object] = {'page_size': page_size}
 
     i = 0
     for (key, val) in [('name', name),
-                       ('container', container),
+                       ('container_name', container_name),
                        ]:
         if val is None:
             continue
@@ -85,11 +85,11 @@ def fetch_paginated_results(query: Mapping[str, object]) \
 
 
 def findapps(name: Optional[str] = None,
-             container: Optional[str] = None,
+             container_name: Optional[str] = None,
              page_size: int = DEFAULT_PAGESIZE,
              ) -> Iterator[ContainerApp]:
     query = build_search_query(name=name,
-                               container=container,
+                               container_name=container_name,
                                page_size=page_size,
                                )
     logger.debug("Built search query %r.", query)
@@ -101,13 +101,13 @@ def findapps(name: Optional[str] = None,
 
 
 def main_typed(name: Optional[str] = None,
-               container: Optional[str] = None,
+               container_name: Optional[str] = None,
                page_size: int = DEFAULT_PAGESIZE,
                is_json: bool = False,
                ) -> None:
 
     apps = findapps(name=name,
-                    container=container,
+                    container_name=container_name,
                     page_size=page_size,
                     )
 
@@ -132,7 +132,7 @@ def main_typed(name: Optional[str] = None,
 def main(argv: Sequence[str]) -> int:
     parser = cli_parser()
     args = parse_cli(parser, argv)
-    main_typed(args.name, args.container, args.page_size, args.json)
+    main_typed(args.name, args.container_name, args.page_size, args.json)
     return 0
 
 
