@@ -121,9 +121,10 @@ def check_dataset_availability(dataset: Dataset,
         )
 
     logger.warning(
-        "Dataset %s (arg: %s) is purged and no alternative found.",
+        "Dataset %s (arg: %s, hash: %s) is purged and no alternative found.",
         escape(dataset.name),
         escape(argument_name),
+        escape(str(dataset.md5checksum)),
     )
     return DatasetStatus(
         dataset=dataset,
