@@ -17,11 +17,13 @@ import kivecli.findbatches as findbatches
 import kivecli.finddatasets as finddatasets
 import kivecli.findapps as findapps
 import kivecli.upload_dataset as upload_dataset
+import kivecli.makecontainer as makecontainer
 from .mainwrap import mainwrap
 
 PROGRAMS = ["run", "rerun", "check_rerun", "download", "watch",
             "createzipapp", "zip", "findruns", "findrun", "stop",
-            "findbatches", "finddatasets", "findapps", "upload_dataset"]
+            "findbatches", "finddatasets", "findapps", "upload_dataset",
+            "makecontainer"]
 
 HELP_MESSAGE = """\
 usage: kivecli [-h] {programs} [arguments ...]
@@ -96,6 +98,8 @@ def main(argv: Sequence[str]) -> int:
         return findapps.main(arguments)
     elif program == "upload_dataset":
         return upload_dataset.main(arguments)
+    elif program == "makecontainer":
+        return makecontainer.main(arguments)
     else:
         raise RuntimeError(f"Unknown program value {repr(program)}")
 
