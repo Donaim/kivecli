@@ -97,33 +97,8 @@ def fetch_containers_by_name(
 
 def fetch_apps_from_container(container: Container) -> Iterator[App]:
     """Fetch all apps from a specific container."""
-    with login() as kive:
-        try:
-            app_list_url = str(container.raw.get("app_list", ""))
-            if not app_list_url:
-                logger.warning("Container %s has no app_list URL", container.id)
-                return
-
-            logger.debug(
-                "Fetching apps from container %s (family: %s, tag: %s)",
-                container.id,
-                escape(container.family_name),
-                escape(container.tag),
-            )
-
-            apps_data = kive.get(app_list_url).json()
-
-            for app_raw in apps_data:
-                yield App._from_json(app_raw)
-
-        except kiveapi.KiveServerException as err:
-            logger.error(
-                "Failed to retrieve apps from container %s: %s", container.id, err
-            )
-        except kiveapi.KiveClientException as err:
-            logger.error(
-                "Failed to retrieve apps from container %s: %s", container.id, err
-            )
+    # Use the Container's built-in method which uses the typed app_list_url field
+    yield from container.fetch_apps()
 
 
 def filter_apps_by_name(apps: Iterator[App], name: str) -> Iterator[App]:
