@@ -1,10 +1,12 @@
 from dataclasses import dataclass
-from typing import Mapping, TextIO
+from typing import Mapping, TextIO, Iterator, Optional, MutableMapping
 import json
 
 from .url import URL
 from .login import login
 from .containerappid import ContainerAppId
+from .logger import logger
+import kiveapi
 
 
 @dataclass(frozen=True)
@@ -20,13 +22,71 @@ class App:
     description: str
 
     @staticmethod
-    def get(url: URL) -> "App":
+    def get_by_id(app_id: int) -> "App":
+        """Get a specific app by ID from the Kive server.
+
+        Args:
+            app_id: The numeric ID of the app
+
+        Returns:
+            App object verified to exist on server
+        """
         with login() as kive:
-            raw = kive.get(url.value).json()
-        return App._from_json(raw)
+            raw = kive.endpoints.containerapps.get(app_id)
+            return App.__from_json(raw)
 
     @staticmethod
-    def _from_json(raw: Mapping[str, object]) -> "App":
+    def search(
+        container_id: Optional[int] = None,
+        container_family_id: Optional[int] = None,
+        name: Optional[str] = None,
+    ) -> Iterator["App"]:
+        """Search for apps matching the given criteria.
+
+        Args:
+            container_id: Filter by container ID
+            container_family_id: Filter by container family ID
+            name: Filter by app name
+
+        Yields:
+            App objects that match the search criteria
+        """
+        with login() as kive:
+            query: MutableMapping[str, object] = {}
+            if container_id is not None:
+                query["container"] = container_id
+            if container_family_id is not None:
+                query["container_family"] = container_family_id
+            if name is not None:
+                query["name"] = name
+
+            url = None
+            while True:
+                try:
+                    if url:
+                        response = kive.get(url)
+                        response.raise_for_status()
+                        data = response.json()
+                    else:
+                        data = kive.endpoints.containerapps.get(params=query)
+
+                    for raw in data["results"]:
+                        yield App.__from_json(raw)
+
+                    url = data.get("next")
+                    if not url:
+                        break
+                except (
+                    KeyError,
+                    kiveapi.KiveServerException,
+                    kiveapi.KiveClientException,
+                ) as err:
+                    logger.error("Failed to retrieve apps: %s", err)
+                    break
+
+    @staticmethod
+    def __from_json(raw: Mapping[str, object]) -> "App":
+        """Internal method to construct App from JSON. Do not use directly."""
         id = ContainerAppId(int(str(raw["id"])))
         url = URL(str(raw["url"]))
         name = str(raw["name"])

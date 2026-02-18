@@ -6,12 +6,9 @@ import sys
 
 from .mainwrap import mainwrap
 from .parsecli import parse_cli
-from .login import login
 from .usererror import UserError
 from .logger import logger
 from .containerfamily import ContainerFamily
-
-import kiveapi
 
 
 DEFAULT_PAGESIZE = 10
@@ -69,33 +66,49 @@ def build_search_query(
 
 
 def fetch_paginated_results(query: Mapping[str, object]) -> Iterator[ContainerFamily]:
+    """Search for container families using the given query parameters.
 
-    with login() as kive:
-        url = None
-        while True:
-            try:
-                if url:
-                    response = kive.get(url)
-                    response.raise_for_status()
-                    data = response.json()
-                else:
-                    data = kive.endpoints.containerfamilies.get(params=query)
+    Extracts filters from query and uses ContainerFamily.search().
+    """
+    # Extract filters
+    name_filter = None
+    git_filter = None
+    description_filter = None
+    user_filter = None
+    page_size_obj: object = query.get("page_size", 200)
+    if isinstance(page_size_obj, int):
+        page_size = page_size_obj
+    elif isinstance(page_size_obj, str):
+        page_size = int(page_size_obj)
+    else:
+        raise TypeError(f"Invalid type for page_size: {type(page_size_obj)}")
 
-                for raw in data["results"]:
-                    yield ContainerFamily._from_json(raw)
+    for i in range(10):  # Check up to 10 filters
+        key_param = f"filters[{i}][key]"
+        val_param = f"filters[{i}][val]"
+        if key_param not in query:
+            continue
 
-                url = data.get("next")
-                if not url:
-                    break
-            except KeyError as err:
-                logger.error("Unexpected response structure: %s", err)
-                break
-            except kiveapi.KiveServerException as err:
-                logger.error("Failed to retrieve container families: %s", err)
-                break
-            except kiveapi.KiveClientException as err:
-                logger.error("Failed to retrieve container families: %s", err)
-                break
+        filter_key = query[key_param]
+        filter_val = str(query[val_param])
+
+        if filter_key == "name":
+            name_filter = filter_val
+        elif filter_key == "git":
+            git_filter = filter_val
+        elif filter_key == "description":
+            description_filter = filter_val
+        elif filter_key == "user":
+            user_filter = filter_val
+
+    # Use ContainerFamily.search()
+    yield from ContainerFamily.search(
+        name=name_filter,
+        git=git_filter,
+        description=description_filter,
+        user=user_filter,
+        page_size=page_size,
+    )
 
 
 def findcontainerfamilies(

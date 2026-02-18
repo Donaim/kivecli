@@ -6,7 +6,6 @@ import sys
 
 from .mainwrap import mainwrap
 from .parsecli import parse_cli
-from .login import login
 from .usererror import UserError
 from .logger import logger
 from .app import App
@@ -45,54 +44,21 @@ def cli_parser() -> argparse.ArgumentParser:
 
 def fetch_containers_by_id(container_id: int, page_size: int) -> Iterator[Container]:
     """Fetch a specific container by ID."""
-    with login() as kive:
-        try:
-            container_raw = kive.endpoints.containers.get(container_id)
-            yield Container._from_json(container_raw)
-        except kiveapi.KiveClientException as err:
-            logger.error("Failed to retrieve container %d: %s", container_id, err)
-        except kiveapi.KiveServerException as err:
-            logger.error("Failed to retrieve container %d: %s", container_id, err)
+    try:
+        yield Container.get_by_id(container_id)
+    except kiveapi.KiveClientException as err:
+        logger.error("Failed to retrieve container %d: %s", container_id, err)
+    except kiveapi.KiveServerException as err:
+        logger.error("Failed to retrieve container %d: %s", container_id, err)
 
 
 def fetch_containers_by_name(
     container_name: str, page_size: int
 ) -> Iterator[Container]:
     """Search for containers by family name or tag."""
-    query: MutableMapping[str, object] = {"page_size": page_size}
-
-    # Use 'smart' filter to search both family name and tag
-    query["filters[0][key]"] = "smart"
-    query["filters[0][val]"] = container_name
-
-    logger.debug("Searching containers with query %r.", query)
-
-    with login() as kive:
-        url = None
-        while True:
-            try:
-                if url:
-                    response = kive.get(url)
-                    response.raise_for_status()
-                    data = response.json()
-                else:
-                    data = kive.endpoints.containers.get(params=query)
-
-                for raw in data["results"]:
-                    yield Container._from_json(raw)
-
-                url = data.get("next")
-                if not url:
-                    break
-            except KeyError as err:
-                logger.error("Unexpected response structure: %s", err)
-                break
-            except kiveapi.KiveServerException as err:
-                logger.error("Failed to retrieve containers: %s", err)
-                break
-            except kiveapi.KiveClientException as err:
-                logger.error("Failed to retrieve containers: %s", err)
-                break
+    # Use Container.search() with smart filter to search both family name and tag
+    logger.debug("Searching containers with name %r.", container_name)
+    yield from Container.search(smart_filter=container_name, page_size=page_size)
 
 
 def fetch_apps_from_container(container: Container) -> Iterator[App]:
@@ -132,34 +98,21 @@ def build_search_query(
 
 
 def fetch_paginated_results(query: Mapping[str, object]) -> Iterator[App]:
-    """Deprecated: Old implementation using direct app search."""
-    with login() as kive:
-        url = None
-        while True:
-            try:
-                if url:
-                    response = kive.get(url)
-                    response.raise_for_status()
-                    data = response.json()
-                else:
-                    data = kive.endpoints.containerapps.get(params=query)
+    """Search for apps using the given query parameters.
 
-                for raw in data["results"]:
-                    # Convert to App instead of ContainerApp
-                    yield App._from_json(raw)
+    Extracts name filter from query and uses App.search().
+    """
+    # Extract name filter if present
+    name_filter = None
+    for i in range(10):  # Check up to 10 filters
+        key_param = f"filters[{i}][key]"
+        val_param = f"filters[{i}][val]"
+        if key_param in query and query[key_param] == "name":
+            name_filter = str(query[val_param])
+            break
 
-                url = data.get("next")
-                if not url:
-                    break
-            except KeyError as err:
-                logger.error("Unexpected response structure: %s", err)
-                break
-            except kiveapi.KiveServerException as err:
-                logger.error("Failed to retrieve container apps: %s", err)
-                break
-            except kiveapi.KiveClientException as err:
-                logger.error("Failed to retrieve container apps: %s", err)
-                break
+    # Use App.search()
+    yield from App.search(name=name_filter)
 
 
 def findapps(

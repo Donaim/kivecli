@@ -2,8 +2,7 @@
 
 import argparse
 import sys
-from typing import Sequence, BinaryIO, Mapping, Iterable, Optional, \
-    NoReturn, Union, Iterator
+from typing import Sequence, BinaryIO, Iterable, Optional, NoReturn, Union, Iterator
 from pathlib import Path
 
 import kiveapi
@@ -21,108 +20,106 @@ from .url import URL
 from .escape import escape
 from .await_containerrrun import await_containerrun
 from .runfilesfilter import RunFilesFilter
-from .findbatches import findbatches
 from .kiverun import KiveRun
 from .runstate import RunState
 from .app import App
 from .kivebatch import KiveBatch
-from .find_dataset import \
-    find_kive_dataset, ALLOWED_GROUPS, find_name_and_permissions_match
+from .find_dataset import find_kive_dataset, ALLOWED_GROUPS
 import kivecli.download as kivedownload
 
 
 def cli_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run a Kive app.")
 
-    parser.add_argument("--output", type=dir_path,
-                        help="Output folder where results are downloaded."
-                        " Not downloading by default.")
+    parser.add_argument(
+        "--output",
+        type=dir_path,
+        help="Output folder where results are downloaded. Not downloading by default.",
+    )
 
-    parser.add_argument("--nowait", action='store_true', default=False,
-                        help="Do not wait until the run is finished.")
-    parser.add_argument("--filefilter", type=RunFilesFilter.parse,
-                        default=RunFilesFilter.default(),
-                        help="Filter for files to be downloaded.")
+    parser.add_argument(
+        "--nowait",
+        action="store_true",
+        default=False,
+        help="Do not wait until the run is finished.",
+    )
+    parser.add_argument(
+        "--filefilter",
+        type=RunFilesFilter.parse,
+        default=RunFilesFilter.default(),
+        help="Filter for files to be downloaded.",
+    )
     parser.add_argument("--batch", help="Unique name for the batch.")
     parser.add_argument("--run_name", help="A name for the run.")
-    parser.add_argument("--stdout",
-                        default=sys.stdout.buffer,
-                        type=argparse.FileType('wb'),
-                        help="Redirected stdout to file.")
-    parser.add_argument("--stderr",
-                        default=sys.stderr.buffer,
-                        type=argparse.FileType('wb'),
-                        help="Redirected stderr to file.")
-    parser.add_argument("--app_id", type=int, required=True,
-                        help="App id of the target pipeline.")
-    parser.add_argument("inputs",
-                        nargs="+",
-                        type=input_file_or_url,
-                        help="Path or URLs of the input files.")
+    parser.add_argument(
+        "--stdout",
+        default=sys.stdout.buffer,
+        type=argparse.FileType("wb"),
+        help="Redirected stdout to file.",
+    )
+    parser.add_argument(
+        "--stderr",
+        default=sys.stderr.buffer,
+        type=argparse.FileType("wb"),
+        help="Redirected stderr to file.",
+    )
+    parser.add_argument(
+        "--app_id", type=int, required=True, help="App id of the target pipeline."
+    )
+    parser.add_argument(
+        "inputs",
+        nargs="+",
+        type=input_file_or_url,
+        help="Path or URLs of the input files.",
+    )
 
     return parser
 
 
 def create_batch(name: str) -> KiveBatch:
-    with login() as kive:
-        description = ''
-        old_batches = [batch.raw for batch in findbatches(name=name)]
-        batch = find_name_and_permissions_match(old_batches, 'batch')
-
-        if batch is None:
-            batch_raw = kive.endpoints.batches.post(json=dict(
-                name=name,
-                description=description,
-                groups_allowed=ALLOWED_GROUPS))
-            logger.debug("Created new batch named %s.", escape(name))
-            return KiveBatch.from_json(batch_raw)
-        else:
-            logger.debug("Found existing batch named %s.", escape(name))
-            return KiveBatch.from_json(batch)
-
-    # This line should never be reached, but satisfies type checker
-    raise RuntimeError("Unreachable code")
+    return KiveBatch.find_or_create(name, ALLOWED_GROUPS)
 
 
 def find_kive_containerapp(app_id: Optional[str]) -> App:
     """Find and return a Kive container app by ID.
-    
+
     Args:
         app_id: The ID of the container app
-        
+
     Returns:
         App object with typed fields
-        
+
     Raises:
         UserError: If app_id is not provided
     """
     if app_id is not None:
-        with login() as kive:
-            app_raw = kive.endpoints.containerapps.get(app_id)
-            return App._from_json(app_raw)
+        return App.get_by_id(int(app_id))
 
     raise UserError("Value for app id must be provided.")
 
 
-def upload_or_retrieve_dataset(session: kiveapi.KiveAPI,
-                               name: Union[str, URL],
-                               inputpath: PathOrURL,
-                               users: Optional[Sequence[str]] = None,
-                               groups: Optional[Sequence[str]] = None) \
-                               -> Optional[Dataset]:
+def upload_or_retrieve_dataset(
+    session: kiveapi.KiveAPI,
+    name: Union[str, URL],
+    inputpath: PathOrURL,
+    users: Optional[Sequence[str]] = None,
+    groups: Optional[Sequence[str]] = None,
+) -> Optional[Dataset]:
     """Create a dataset by uploading a file to Kive."""
 
     def report_found(dataset: Dataset) -> None:
-        url = URL(str(dataset.raw['url']))
-        printname = str(dataset.raw['name'])
+        url = URL(str(dataset.raw["url"]))
+        printname = str(dataset.raw["name"])
 
         if isinstance(name, str):
-            logger.debug("Found existing dataset for %s at %s.",
-                         escape(name), escape(url))
+            logger.debug(
+                "Found existing dataset for %s at %s.", escape(name), escape(url)
+            )
 
         elif isinstance(name, URL):
-            logger.debug("Found existing dataset at %s for %s.",
-                         escape(url), escape(printname))
+            logger.debug(
+                "Found existing dataset at %s for %s.", escape(url), escape(printname)
+            )
 
         else:
             x: NoReturn = name
@@ -149,15 +146,18 @@ def upload_or_retrieve_dataset(session: kiveapi.KiveAPI,
 
     try:
         with open(inputpath, "rb") as inputfile:
-            dataset = session.add_dataset(name=name,
-                                          description='None',
-                                          handle=inputfile,
-                                          cdt=None,
-                                          users=users,
-                                          groups=groups)
+            dataset = session.add_dataset(
+                name=name,
+                description="None",
+                handle=inputfile,
+                cdt=None,
+                users=users,
+                groups=groups,
+            )
             url = URL(str(dataset.raw["url"]))
-            logger.debug("Uploaded new dataset for %s at %s.",
-                         escape(name), escape(url))
+            logger.debug(
+                "Uploaded new dataset for %s at %s.", escape(name), escape(url)
+            )
             return dataset
 
     except kiveapi.KiveMalformedDataException as e:
@@ -179,27 +179,27 @@ def get_input_datasets(inputs: Iterable[PathOrURL]) -> Iterator[Dataset]:
             else:
                 name = arg
 
-            dataset = upload_or_retrieve_dataset(kive,
-                                                 name, arg,
-                                                 users=None,
-                                                 groups=ALLOWED_GROUPS)
+            dataset = upload_or_retrieve_dataset(
+                kive, name, arg, users=None, groups=ALLOWED_GROUPS
+            )
             if dataset is None:
                 raise UserError("Could not find dataset for %s.", escape(arg))
 
             yield dataset
 
 
-def main_logged_in(kive: kiveapi.KiveAPI,
-                   output: Optional[DirPath],
-                   batch: Optional[str],
-                   run_name: Optional[str],
-                   stdout: BinaryIO,
-                   stderr: BinaryIO,
-                   app_id: int,
-                   inputs: Sequence[PathOrURL],
-                   nowait: bool,
-                   filefilter: RunFilesFilter,
-                   ) -> int:
+def main_logged_in(
+    kive: kiveapi.KiveAPI,
+    output: Optional[DirPath],
+    batch: Optional[str],
+    run_name: Optional[str],
+    stdout: BinaryIO,
+    stderr: BinaryIO,
+    app_id: int,
+    inputs: Sequence[PathOrURL],
+    nowait: bool,
+    filefilter: RunFilesFilter,
+) -> int:
     # Get the app from a container family.
     app = find_kive_containerapp(str(app_id))
     app_link = URL(kive.server_url + app.absolute_url)
@@ -213,20 +213,25 @@ def main_logged_in(kive: kiveapi.KiveAPI,
     appargs = kive.endpoints.containerapps.get(f"{appid}/argument_list")
     input_appargs = [x for x in appargs if x["type"] == "I"]
     if len(inputs) > len(input_appargs):
-        raise UserError("At most %s inputs supported, but got %s.",
-                        len(input_appargs), len(inputs))
+        raise UserError(
+            "At most %s inputs supported, but got %s.", len(input_appargs), len(inputs)
+        )
     if len(inputs) < len(input_appargs):
-        logger.warning("At least %s inputs supported, but got %s.",
-                       len(input_appargs), len(inputs))
+        logger.warning(
+            "At least %s inputs supported, but got %s.", len(input_appargs), len(inputs)
+        )
 
-    for (x, y) in zip(input_appargs, inputs):
+    for x, y in zip(input_appargs, inputs):
         kive_name: str = x["name"]
         if isinstance(y, Path):
             filename: Union[str, URL] = y.name
         else:
             filename = y
-        logger.debug("File %s corresponds to Kive argument name %s.",
-                     escape(filename), escape(kive_name))
+        logger.debug(
+            "File %s corresponds to Kive argument name %s.",
+            escape(filename),
+            escape(kive_name),
+        )
 
     appargs_urls = [x["url"] for x in input_appargs]
     input_datasets = list(get_input_datasets(inputs))
@@ -236,15 +241,16 @@ def main_logged_in(kive: kiveapi.KiveAPI,
         {
             "argument": x,
             "dataset": y,
-        } for (x, y) in zip(appargs_urls, datasets_urls)
+        }
+        for (x, y) in zip(appargs_urls, datasets_urls)
     ]
 
-    for (apparg, dataset) in zip(input_appargs, input_datasets):
+    for apparg, dataset in zip(input_appargs, input_datasets):
         name: str = apparg["name"]
-        checksum = dataset.raw['MD5_checksum']
+        checksum = dataset.raw["MD5_checksum"]
         logger.debug("Input %s has MD5 hash %s.", escape(name), checksum)
 
-    run_name_top: str = run_name if run_name is not None else 'A kivecli run'
+    run_name_top: str = run_name if run_name is not None else "A kivecli run"
     runspec = {
         "name": run_name_top,
         "app": app.url.value,
@@ -257,11 +263,9 @@ def main_logged_in(kive: kiveapi.KiveAPI,
         runspec["batch"] = kivebatch.url.value
 
     logger.debug("Starting the run.")
-    containerrun = KiveRun.from_json(
-        kive.endpoints.containerruns.post(json=runspec))
+    containerrun = KiveRun.from_json(kive.endpoints.containerruns.post(json=runspec))
     url = URL(kive.server_url + containerrun.absolute_url)
-    logger.debug("Started run named %s at %s.",
-                 escape(run_name_top), escape(url))
+    logger.debug("Started run named %s at %s.", escape(run_name_top), escape(url))
 
     if not nowait:
         await_containerrun(containerrun)
@@ -296,50 +300,53 @@ def main_logged_in(kive: kiveapi.KiveAPI,
         return 1
 
 
-def main_parsed(output: Optional[DirPath],
-                batch: Optional[str],
-                run_name: Optional[str],
-                stdout: BinaryIO,
-                stderr: BinaryIO,
-                app_id: int,
-                inputs: Sequence[PathOrURL],
-                nowait: bool,
-                filefilter: RunFilesFilter,
-                ) -> int:
+def main_parsed(
+    output: Optional[DirPath],
+    batch: Optional[str],
+    run_name: Optional[str],
+    stdout: BinaryIO,
+    stderr: BinaryIO,
+    app_id: int,
+    inputs: Sequence[PathOrURL],
+    nowait: bool,
+    filefilter: RunFilesFilter,
+) -> int:
 
     with login() as kive:
-        return main_logged_in(kive=kive,
-                              output=output,
-                              batch=batch,
-                              run_name=run_name,
-                              stdout=stdout,
-                              stderr=stderr,
-                              app_id=app_id,
-                              inputs=inputs,
-                              nowait=nowait,
-                              filefilter=filefilter,
-                              )
+        return main_logged_in(
+            kive=kive,
+            output=output,
+            batch=batch,
+            run_name=run_name,
+            stdout=stdout,
+            stderr=stderr,
+            app_id=app_id,
+            inputs=inputs,
+            nowait=nowait,
+            filefilter=filefilter,
+        )
 
 
 def main(argv: Sequence[str]) -> int:
     parser = cli_parser()
     args = parse_cli(parser, argv)
     inputs = args.inputs or []
-    return main_parsed(output=args.output,
-                       batch=args.batch,
-                       run_name=args.run_name,
-                       stdout=args.stdout,
-                       stderr=args.stderr,
-                       app_id=args.app_id,
-                       inputs=inputs,
-                       nowait=args.nowait,
-                       filefilter=args.filefilter,
-                       )
+    return main_parsed(
+        output=args.output,
+        batch=args.batch,
+        run_name=args.run_name,
+        stdout=args.stdout,
+        stderr=args.stderr,
+        app_id=args.app_id,
+        inputs=inputs,
+        nowait=args.nowait,
+        filefilter=args.filefilter,
+    )
 
 
 def cli() -> None:
     mainwrap(main)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()
