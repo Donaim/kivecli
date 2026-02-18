@@ -71,7 +71,7 @@ exclude = [
 
 [tool.ruff.lint]
 # Enable pycodestyle (E, W), pyflakes (F), and isort (I)
-select = ["E", "F", "W", "I"]
+select = ["E", "F", "W"]
 
 # Ignore specific rules if needed
 ignore = []

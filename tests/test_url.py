@@ -5,9 +5,9 @@ from kivecli.usererror import UserError
 
 def test_invalid_url():
     with pytest.raises(UserError):
-        URL('not a url')
+        URL("not a url")
 
 
 def test_valid_url():
-    url = URL('http://example.com')
-    assert str(url) == '<http://example.com>'
+    url = URL("http://example.com")
+    assert str(url) == "<http://example.com>"
