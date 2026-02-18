@@ -61,6 +61,160 @@ def find_container_family(family_name_or_id: str) -> ContainerFamily:
     return family
 
 
+def _validate_container_upload(
+    image_path: Path,
+    users: Optional[Sequence[str]],
+    groups: Optional[Sequence[str]],
+) -> None:
+    """Validate container upload parameters.
+
+    Raises:
+        UserError: If validation fails
+    """
+    if not image_path.exists():
+        raise UserError("File does not exist: %s", escape(str(image_path)))
+    if not image_path.is_file():
+        raise UserError("Path is not a file: %s", escape(str(image_path)))
+    if users is None and groups is None:
+        raise UserError("Must specify at least one user or group for permissions.")
+
+
+def _validate_app_info(app_info: Mapping[str, object], appname: str) -> Optional[str]:
+    """Validate required fields in app_info.
+
+    Args:
+        app_info: App information dictionary from deffile
+        appname: Name of the app
+
+    Returns:
+        Error message if validation fails, None if valid
+    """
+    # Check for errors in app definition
+    app_errors = app_info.get("error_messages")
+    if app_errors:
+        return (
+            f"Skipping app {repr(appname) if appname else 'default'}: "
+            f"{', '.join(app_errors)}"
+        )
+
+    # Check required fields - these must be present and not None
+    if "numthreads" not in app_info:
+        return f"App {repr(appname)} missing required field 'numthreads'"
+    if "memory" not in app_info:
+        return f"App {repr(appname)} missing required field 'memory'"
+
+    if app_info.get("numthreads") is None:
+        return f"App {repr(appname)} has null 'numthreads'"
+    if app_info.get("memory") is None:
+        return f"App {repr(appname)} has null 'memory'"
+
+    # Check io_args
+    io_args = app_info.get("io_args")
+    if not io_args or len(io_args) != 2:
+        return f"App {repr(appname)} missing or invalid io_args"
+
+    return None
+
+
+def _create_single_app(
+    kive: kiveapi.KiveAPI,
+    app_info: Mapping[str, object],
+    container_url: str,
+) -> None:
+    """Create a single app from app_info.
+
+    Args:
+        kive: Kive API session
+        app_info: App information dictionary (already validated)
+        container_url: URL of the parent container
+    """
+    appname = app_info.get("appname", "")
+    io_args = app_info.get("io_args")
+    assert io_args is not None and len(io_args) == 2  # Already validated
+
+    inputs_str, outputs_str = io_args
+    # Default to standard names if None
+    inputs_str = inputs_str or "input_txt"
+    outputs_str = outputs_str or "output_txt"
+
+    # Get required fields (already validated to be non-None)
+    numthreads = app_info.get("numthreads")
+    memory = app_info.get("memory")
+    helpstring = app_info.get("helpstring") or ""
+
+    # Create app via the containerapps endpoint
+    app_data = {
+        "container": container_url,
+        "name": appname,
+        "description": helpstring,
+        "threads": numthreads,
+        "memory": memory,
+        "inputs": inputs_str,
+        "outputs": outputs_str,
+    }
+
+    logger.debug("Creating app: %s", repr(appname))
+    logger.debug("  inputs: %s", inputs_str)
+    logger.debug("  outputs: %s", outputs_str)
+    kive.endpoints.containerapps.post(json=app_data)
+
+
+def _create_apps_from_content(
+    kive: kiveapi.KiveAPI,
+    container_id: int,
+    container_url: str,
+) -> None:
+    """Fetch container content and create apps.
+
+    Args:
+        kive: Kive API session
+        container_id: ID of the container
+        container_url: URL of the container
+    """
+    try:
+        logger.debug("Fetching container content to create apps...")
+        content_url = f"{kive.server_url}/api/containers/{container_id}/content/"
+        content_response = kive.get(content_url)
+        content_response.raise_for_status()
+        content_data = content_response.json()
+
+        applist = content_data.get("applist", [])
+        if not applist:
+            logger.warning("No apps found in container deffile.")
+            return
+
+        logger.debug("Found %s app(s) in container deffile.", len(applist))
+        created_count = 0
+
+        for app_info in applist:
+            appname = app_info.get("appname", "")
+
+            # Validate app
+            error_msg = _validate_app_info(app_info, appname)
+            if error_msg:
+                logger.warning(error_msg)
+                continue
+
+            # Create app
+            try:
+                _create_single_app(kive, app_info, container_url)
+                created_count += 1
+            except Exception as e:
+                logger.warning("Failed to create app %s: %s", repr(appname), e)
+
+        if created_count > 0:
+            logger.info("Successfully created %s app(s) for container.", created_count)
+        else:
+            logger.warning("No valid apps could be created from container deffile.")
+
+    except kiveapi.KiveServerException as e:
+        logger.warning("Failed to create apps from container: %s", e)
+    except kiveapi.KiveClientException as e:
+        logger.warning("Failed to create apps from container: %s", e)
+    except Exception as e:
+        logger.warning("Unexpected error creating apps: %s", e)
+
+
 @dataclass(frozen=True)
 class Container:
     id: ContainerId
@@ -163,16 +317,7 @@ class Container:
         Raises:
             UserError: If upload fails or file doesn't exist
         """
-        if not image_path.exists():
-            raise UserError("File does not exist: %s", escape(str(image_path)))
-
-        if not image_path.is_file():
-            raise UserError("Path is not a file: %s", escape(str(image_path)))
-
-        if users is None and groups is None:
-            raise UserError("Must specify at least one user or group for permissions.")
-
-        # Find the container family
+        _validate_container_upload(image_path, users, groups)
         family = find_container_family(family_name_or_id)
 
         with login() as kive:
@@ -209,92 +354,11 @@ class Container:
                 # The Kive REST API doesn't automatically create apps for
                 # SIMG containers. We need to GET the content (which parses
                 # the deffile) and create apps manually.
-                container_id = local_container.id.value
-                try:
-                    logger.debug("Fetching container content to create apps...")
-                    content_url = (
-                        f"{kive.server_url}/api/containers/{container_id}/content/"
-                    )
-                    content_response = kive.get(content_url)
-                    content_response.raise_for_status()
-                    content_data = content_response.json()
-
-                    applist = content_data.get("applist", [])
-                    if applist:
-                        logger.debug(
-                            "Found %s app(s) in container deffile.",
-                            len(applist),
-                        )
-                        created_count = 0
-                        for app_info in applist:
-                            # Check for errors in app definition
-                            app_errors = app_info.get("error_messages")
-                            appname = app_info.get("appname", "")
-                            if app_errors:
-                                error_summary = (
-                                    f"Skipping app "
-                                    f"{repr(appname) if appname else 'default'}: "
-                                    f"{', '.join(app_errors)}"
-                                )
-                                logger.warning(error_summary)
-                                continue
-
-                            # Extract io_args tuple (inputs_string, outputs_string)
-                            io_args = app_info.get("io_args")
-                            if not io_args or len(io_args) != 2:
-                                logger.warning(
-                                    "App %s missing or invalid io_args, skipping",
-                                    repr(appname),
-                                )
-                                continue
-
-                            inputs_str, outputs_str = io_args
-                            # Default to standard names if None
-                            inputs_str = inputs_str or "input_txt"
-                            outputs_str = outputs_str or "output_txt"
-
-                            # Get other fields with defaults
-                            numthreads = app_info.get("numthreads") or 1
-                            memory = app_info.get("memory") or 5000
-                            helpstring = app_info.get("helpstring") or ""
-
-                            # Create app via the containerapps endpoint
-                            # Note: The API expects "name", "threads",
-                            # "description" but the deffile returns "appname",
-                            # "numthreads", "helpstring"
-                            app_data = {
-                                "container": local_container.url.value,
-                                "name": appname,
-                                "description": helpstring,
-                                "threads": numthreads,
-                                "memory": memory,
-                                "inputs": inputs_str,
-                                "outputs": outputs_str,
-                            }
-
-                            logger.debug("Creating app: %s", repr(appname))
-                            logger.debug("  inputs: %s", inputs_str)
-                            logger.debug("  outputs: %s", outputs_str)
-                            kive.endpoints.containerapps.post(json=app_data)
-                            created_count += 1
-
-                        if created_count > 0:
-                            logger.info(
-                                "Successfully created %s app(s) for container.",
-                                created_count,
-                            )
-                        else:
-                            logger.warning(
-                                "No valid apps could be created from container deffile."
-                            )
-                    else:
-                        logger.warning("No apps found in container deffile.")
-                except kiveapi.KiveServerException as e:
-                    logger.warning("Failed to create apps from container: %s", e)
-                except kiveapi.KiveClientException as e:
-                    logger.warning("Failed to create apps from container: %s", e)
-                except Exception as e:
-                    logger.warning("Unexpected error creating apps: %s", e)
+                _create_apps_from_content(
+                    kive,
+                    local_container.id.value,
+                    local_container.url.value,
+                )
 
                 return local_container
 
