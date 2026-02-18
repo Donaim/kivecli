@@ -225,49 +225,68 @@ class Container:
                             "Found %s app(s) in container deffile.",
                             len(applist),
                         )
+                        created_count = 0
                         for app_info in applist:
-                            if "appname" not in app_info:
-                                raise UserError(
-                                    "App info missing 'appname' field: %s", app_info
+                            # Check for errors in app definition
+                            app_errors = app_info.get("error_messages")
+                            appname = app_info.get("appname", "")
+                            if app_errors:
+                                error_summary = (
+                                    f"Skipping app "
+                                    f"{repr(appname) if appname else 'default'}: "
+                                    f"{', '.join(app_errors)}"
                                 )
-                            if "description" not in app_info:
-                                logger.debug(
-                                    "App info missing 'description' field, "
-                                    "defaulting to empty string."
-                                )
-                            if "numthreads" not in app_info:
-                                raise UserError(
-                                    "App info missing 'numthreads' field: %s", app_info
-                                )
-                            if "memory" not in app_info:
-                                raise UserError(
-                                    "App info missing 'memory' field: %s", app_info
-                                )
+                                logger.warning(error_summary)
+                                continue
 
-                            # Create each app via the containerapps endpoint
+                            # Extract io_args tuple (inputs_string, outputs_string)
+                            io_args = app_info.get("io_args")
+                            if not io_args or len(io_args) != 2:
+                                logger.warning(
+                                    "App %s missing or invalid io_args, skipping",
+                                    repr(appname),
+                                )
+                                continue
+
+                            inputs_str, outputs_str = io_args
+                            # Default to standard names if None
+                            inputs_str = inputs_str or "input_txt"
+                            outputs_str = outputs_str or "output_txt"
+
+                            # Get other fields with defaults
+                            numthreads = app_info.get("numthreads") or 1
+                            memory = app_info.get("memory") or 5000
+                            helpstring = app_info.get("helpstring") or ""
+
+                            # Create app via the containerapps endpoint
+                            # Note: The API expects "name", "threads",
+                            # "description" but the deffile returns "appname",
+                            # "numthreads", "helpstring"
                             app_data = {
                                 "container": local_container.url.value,
-                                "name": app_info.get("appname", ""),
-                                "appname": app_info.get("appname", ""),
-                                "description": app_info.get("description", ""),
-                                "threads": app_info.get("numthreads", 1),
-                                "numthreads": app_info.get("numthreads", 1),
-                                "memory": app_info.get("memory", 5000),
+                                "name": appname,
+                                "description": helpstring,
+                                "threads": numthreads,
+                                "memory": memory,
+                                "inputs": inputs_str,
+                                "outputs": outputs_str,
                             }
 
-                            # Add inputs/outputs if present
-                            if "inputs" in app_info:
-                                app_data["inputs"] = app_info["inputs"]
-                            if "outputs" in app_info:
-                                app_data["outputs"] = app_info["outputs"]
-
-                            logger.debug(f"Creating app: {app_data['name']}")
+                            logger.debug("Creating app: %s", repr(appname))
+                            logger.debug("  inputs: %s", inputs_str)
+                            logger.debug("  outputs: %s", outputs_str)
                             kive.endpoints.containerapps.post(json=app_data)
+                            created_count += 1
 
-                        logger.info(
-                            "Successfully created %s app(s) for container.",
-                            len(applist),
-                        )
+                        if created_count > 0:
+                            logger.info(
+                                "Successfully created %s app(s) for container.",
+                                created_count,
+                            )
+                        else:
+                            logger.warning(
+                                "No valid apps could be created from container deffile."
+                            )
                     else:
                         logger.warning("No apps found in container deffile.")
                 except kiveapi.KiveServerException as e:
