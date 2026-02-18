@@ -305,43 +305,6 @@ class Container:
             app_list_url=app_list_url,
         )
 
-    def fetch_apps(self) -> Iterator["App"]:
-        """Fetch all apps from this container's app_list URL."""
-        # Import here to avoid circular import at module level
-        from .app import App
-
-        with login() as kive:
-            try:
-                logger.debug(
-                    "Fetching apps from container %s (family: %s, tag: %s)",
-                    self.id,
-                    escape(self.family_name),
-                    escape(self.tag),
-                )
-
-                apps_data = kive.get(self.app_list_url.value).json()
-
-                for app_raw in apps_data:
-                    yield App.__from_json(app_raw)
-
-            except kiveapi.KiveServerException as err:
-                logger.error(
-                    "Failed to retrieve apps from container %s: %s", self.id, err
-                )
-            except kiveapi.KiveClientException as err:
-                logger.error(
-                    "Failed to retrieve apps from container %s: %s", self.id, err
-                )
-
-            except kiveapi.KiveServerException as err:
-                logger.error(
-                    "Failed to retrieve apps from container %s: %s", self.id, err
-                )
-            except kiveapi.KiveClientException as err:
-                logger.error(
-                    "Failed to retrieve apps from container %s: %s", self.id, err
-                )
-
     def get_apps_list(self) -> List["App"]:
         """Get all apps from this container as a list."""
         return list(self.fetch_apps())

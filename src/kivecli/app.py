@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass
-from typing import Iterator, Mapping, MutableMapping, Optional, TextIO
+from typing import Iterator, Mapping, MutableMapping, Optional, TextIO, TYPE_CHECKING
 
 import kiveapi
 
@@ -8,6 +8,11 @@ from .containerappid import ContainerAppId
 from .logger import logger
 from .login import login
 from .url import URL
+from .escape import escape
+
+
+if TYPE_CHECKING:
+    from .container import Container
 
 
 @dataclass(frozen=True)
@@ -35,6 +40,44 @@ class App:
         with login() as kive:
             raw = kive.endpoints.containerapps.get(app_id)
             return App.__from_json(raw)
+
+    @staticmethod
+    def containers(container: "Container") -> Iterator["App"]:
+        """Get all apps within a specific container.
+
+        Args:
+            container: The Container object to get apps from
+
+        Yields:
+            App objects that are within the given container
+        """
+
+        """Fetch all apps from this container's app_list URL."""
+        # Import here to avoid circular import at module level
+        from .app import App
+
+        with login() as kive:
+            try:
+                logger.debug(
+                    "Fetching apps from container %s (family: %s, tag: %s)",
+                    container.id,
+                    escape(container.family_name),
+                    escape(container.tag),
+                )
+
+                apps_data = kive.get(container.app_list_url.value).json()
+
+                for app_raw in apps_data:
+                    yield App.__from_json(app_raw)
+
+            except kiveapi.KiveServerException as err:
+                logger.error(
+                    "Failed to retrieve apps from container %s: %s", container.id, err
+                )
+            except kiveapi.KiveClientException as err:
+                logger.error(
+                    "Failed to retrieve apps from container %s: %s", container.id, err
+                )
 
     @staticmethod
     def search(
