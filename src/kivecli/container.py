@@ -92,9 +92,13 @@ def _validate_app_info(app_info: Mapping[str, object], appname: str) -> Optional
     # Check for errors in app definition
     app_errors = app_info.get("error_messages")
     if app_errors:
+        if not hasattr(app_errors, "__iter__"):
+            raise UserError("Invalid app_info format: 'error_messages' should be iterable.")
+        else:
+            app_errors = list(app_errors)  # Ensure it's a list for multiple iterations
         return (
             f"Skipping app {repr(appname) if appname else 'default'}: "
-            f"{', '.join(app_errors)}"
+            f"{', '.join(map(str, app_errors))}"
         )
 
     # Check required fields - these must be present and not None
