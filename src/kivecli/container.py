@@ -235,9 +235,9 @@ class Container:
                                     "App info missing 'description' field, "
                                     "defaulting to empty string."
                                 )
-                            if "threads" not in app_info:
+                            if "numthreads" not in app_info:
                                 raise UserError(
-                                    "App info missing 'threads' field: %s", app_info
+                                    "App info missing 'numthreads' field: %s", app_info
                                 )
                             if "memory" not in app_info:
                                 raise UserError(
@@ -250,7 +250,8 @@ class Container:
                                 "name": app_info.get("appname", ""),
                                 "appname": app_info.get("appname", ""),
                                 "description": app_info.get("description", ""),
-                                "threads": app_info.get("threads", 1),
+                                "threads": app_info.get("numthreads", 1),
+                                "numthreads": app_info.get("numthreads", 1),
                                 "memory": app_info.get("memory", 5000),
                             }
 
