@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator, List, Mapping, MutableMapping, Optional, Sequence, TextIO
+from typing import Iterator, Mapping, MutableMapping, Optional, Sequence, TextIO
 
 import kiveapi
 
