@@ -135,7 +135,7 @@ def main_typed(
     ):
         count += 1
         if json:
-            container.dump(sys.stdout, expand_apps=False)
+            container.dump(sys.stdout)
         else:
             print(
                 f"Container {container.id.value}: "
