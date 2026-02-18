@@ -1,20 +1,13 @@
 #! /usr/bin/env python3
 
 import argparse
-from typing import Mapping, Sequence, Iterator, Optional, MutableMapping
+from typing import Sequence, Iterator, Optional
 import sys
 
 from .mainwrap import mainwrap
 from .parsecli import parse_cli
-from .login import login
 from .usererror import UserError
-from .logger import logger
-from .kivebatch import KiveBatch
-
-import kiveapi
-
-
-DEFAULT_PAGESIZE = 1000
+from .kivebatch import KiveBatch, DEFAULT_PAGESIZE
 
 
 def cli_parser() -> argparse.ArgumentParser:
@@ -33,69 +26,13 @@ def cli_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def build_search_query(name: Optional[str],
-                       description: Optional[str],
-                       page_size: int,
-                       ) -> Mapping[str, object]:
-    query: MutableMapping[str, object] = {'page_size': page_size}
-
-    i = 0
-    for (key, val) in [('name', name),
-                       ('description', description),
-                       ]:
-        if val is None:
-            continue
-
-        query[f'filters[{i}][key]'] = key
-        query[f'filters[{i}][val]'] = val
-        i += 1
-
-    return query
-
-
-def fetch_paginated_results(query: Mapping[str, object]) \
-        -> Iterator[KiveBatch]:
-
-    with login() as kive:
-        url = None
-        while True:
-            try:
-                if url:
-                    response = kive.get(url)
-                    response.raise_for_status()
-                    data = response.json()
-                else:
-                    data = kive.endpoints.batches.filter(params=query)
-
-                for raw in data['results']:
-                    yield KiveBatch.from_json(raw)
-
-                url = data.get('next')
-                if not url:
-                    break
-            except KeyError as err:
-                logger.error("Unexpected response structure: %s", err)
-                break
-            except kiveapi.KiveServerException as err:
-                logger.error("Failed to retrieve batches: %s", err)
-                break
-            except kiveapi.KiveClientException as err:
-                logger.error("Failed to retrieve batches: %s", err)
-                break
-
 
 def findbatches(name: Optional[str] = None,
                 description: Optional[str] = None,
                 page_size: int = DEFAULT_PAGESIZE,
                 ) -> Iterator[KiveBatch]:
-    query = build_search_query(name=name,
-                               description=description,
-                               page_size=page_size,
-                               )
-    logger.debug("Built search query %r.", query)
-
     try:
-        yield from fetch_paginated_results(query)
+        yield from KiveBatch.search(name=name, description=description, page_size=page_size)
     except Exception as err:
         raise UserError("An error occurred while searching: %s", err)
 
