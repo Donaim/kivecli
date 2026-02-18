@@ -226,9 +226,9 @@ class Container:
                             len(applist),
                         )
                         for app_info in applist:
-                            if "name" not in app_info:
+                            if "appname" not in app_info:
                                 raise UserError(
-                                    "App info missing 'name' field: %s", app_info
+                                    "App info missing 'appname' field: %s", app_info
                                 )
                             if "description" not in app_info:
                                 logger.debug(
@@ -247,7 +247,8 @@ class Container:
                             # Create each app via the containerapps endpoint
                             app_data = {
                                 "container": local_container.url.value,
-                                "name": app_info.get("name", ""),
+                                "name": app_info.get("appname", ""),
+                                "appname": app_info.get("appname", ""),
                                 "description": app_info.get("description", ""),
                                 "threads": app_info.get("threads", 1),
                                 "memory": app_info.get("memory", 5000),
