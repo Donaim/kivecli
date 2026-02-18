@@ -8,6 +8,7 @@ import kivecli.createzipapp as createzipapp
 import kivecli.download as kivedownload
 import kivecli.findapps as findapps
 import kivecli.findbatches as findbatches
+import kivecli.findcontainer as findcontainer
 import kivecli.findcontainerfamilies as findcontainerfamilies
 import kivecli.finddatasets as finddatasets
 import kivecli.findrun as findrun
@@ -25,7 +26,7 @@ from .mainwrap import mainwrap
 PROGRAMS = ["run", "rerun", "check_rerun", "download", "watch",
             "createzipapp", "zip", "findruns", "findrun", "stop",
             "findbatches", "finddatasets", "findapps", "upload_dataset",
-            "makecontainer", "findcontainerfamilies"]
+            "makecontainer", "findcontainer", "findcontainerfamilies"]
 
 HELP_MESSAGE = """\
 usage: kivecli [-h] {programs} [arguments ...]
@@ -102,6 +103,8 @@ def main(argv: Sequence[str]) -> int:
         return upload_dataset.main(arguments)
     elif program == "makecontainer":
         return makecontainer.main(arguments)
+    elif program == "findcontainer":
+        return findcontainer.main(arguments)
     elif program == "findcontainerfamilies":
         return findcontainerfamilies.main(arguments)
     else:
