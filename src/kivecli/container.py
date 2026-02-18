@@ -114,6 +114,13 @@ def _validate_app_info(app_info: Mapping[str, object], appname: str) -> Optional
 
     # Check io_args
     io_args = app_info.get("io_args")
+    if io_args is None:
+        return f"App {repr(appname)} missing required field 'io_args'"
+
+    if not hasattr(io_args, "__iter__"):
+        return f"App {repr(appname)} has invalid 'io_args' format: should be iterable"
+    else:
+        io_args = list(io_args)  # Ensure it's a list for multiple iterations
     if not io_args or len(io_args) != 2:
         return f"App {repr(appname)} missing or invalid io_args"
 
