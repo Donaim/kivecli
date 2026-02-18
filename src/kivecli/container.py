@@ -75,7 +75,7 @@ class Container:
         """Get all apps from this container as a list."""
         return list(self.fetch_apps())
 
-    def dump(self, out: TextIO, expand_apps: bool = False) -> None:
+    def dump(self, out: TextIO, expand_apps: bool = True) -> None:
         """Dump container as JSON, optionally expanding the app_list.
 
         Args:
