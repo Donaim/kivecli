@@ -305,9 +305,9 @@ class Container:
             app_list_url=app_list_url,
         )
 
-    def get_apps_list(self) -> List["App"]:
+    def get_apps_list(self) -> Sequence["App"]:
         """Get all apps from this container as a list."""
-        return list(self.fetch_apps())
+        return tuple(App.containers(self))
 
     def dump(self, out: TextIO, expand_apps: bool = True) -> None:
         """Dump container as JSON, optionally expanding the app_list.
