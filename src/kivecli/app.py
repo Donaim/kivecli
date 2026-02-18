@@ -15,6 +15,7 @@ class App:
     raw: Mapping[str, object]
     name: str
     url: URL
+    absolute_url: str
     container_name: str
     description: str
 
@@ -29,6 +30,7 @@ class App:
         id = ContainerAppId(int(str(raw["id"])))
         url = URL(str(raw["url"]))
         name = str(raw["name"])
+        absolute_url = str(raw.get("absolute_url", ""))
         container_name = str(raw.get("container_name", ""))
         description = str(raw.get("description", ""))
         return App(
@@ -36,6 +38,7 @@ class App:
             raw=raw,
             name=name,
             url=url,
+            absolute_url=absolute_url,
             container_name=container_name,
             description=description,
         )

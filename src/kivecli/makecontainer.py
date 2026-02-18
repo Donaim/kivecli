@@ -2,7 +2,7 @@
 
 import argparse
 from pathlib import Path
-from typing import Sequence, Optional, Any
+from typing import Sequence, Optional
 
 from .logger import logger
 from .mainwrap import mainwrap
@@ -11,6 +11,7 @@ from .login import login
 from .escape import escape
 from .usererror import UserError
 from .container import Container as LocalContainer
+from .containerfamily import ContainerFamily
 
 import kiveapi
 
@@ -48,7 +49,7 @@ def cli_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def find_container_family(family_name_or_id: str) -> Any:
+def find_container_family(family_name_or_id: str) -> ContainerFamily:
     """
     Find a container family by name or ID.
 
@@ -56,7 +57,7 @@ def find_container_family(family_name_or_id: str) -> Any:
         family_name_or_id: Name or ID of the container family
 
     Returns:
-        Container family object
+        ContainerFamily object with typed fields
 
     Raises:
         UserError: If family is not found or multiple matches exist
@@ -65,33 +66,35 @@ def find_container_family(family_name_or_id: str) -> Any:
         # Try to interpret as ID first
         try:
             family_id = int(family_name_or_id)
-            family = kive.endpoints.containerfamilies.get(family_id)
+            family_raw = kive.endpoints.containerfamilies.get(family_id)
+            family = ContainerFamily._from_json(family_raw)
             logger.debug(
-                "Found container family by ID %s: %s", family_id, escape(family["name"])
+                "Found container family by ID %s: %s", family_id, escape(family.name)
             )
             return family
         except (ValueError, kiveapi.KiveClientException):
             pass
 
         # Search by name
-        families = kive.endpoints.containerfamilies.filter("name", family_name_or_id)
+        families_raw = kive.endpoints.containerfamilies.filter("name", family_name_or_id)
 
-        if not families:
+        if not families_raw:
             raise UserError("Container family not found: %s", escape(family_name_or_id))
 
-        if len(families) > 1:
+        if len(families_raw) > 1:
             raise UserError(
                 "Multiple container families found with name %s. "
                 "Please use the family ID instead.",
                 escape(family_name_or_id),
             )
 
+        family = ContainerFamily._from_json(families_raw[0])
         logger.debug(
             "Found container family by name '%s': ID %s",
             escape(family_name_or_id),
-            families[0]["id"],
+            family.id,
         )
-        return families[0]
+        return family
 
 
 def upload_container(
@@ -136,14 +139,14 @@ def upload_container(
             logger.debug(
                 "Uploading singularity container %s to family %s with tag %s.",
                 escape(str(image_path)),
-                escape(family["name"]),
+                escape(family.name),
                 escape(tag),
             )
 
             with open(image_path, "rb") as handle:
                 # Prepare the metadata for the container
                 metadata_dict = {
-                    "family": family["url"],
+                    "family": family.url.value,
                     "tag": tag,
                     "description": description,
                     "users_allowed": users or [],

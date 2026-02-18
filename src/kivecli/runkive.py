@@ -24,6 +24,8 @@ from .runfilesfilter import RunFilesFilter
 from .findbatches import findbatches
 from .kiverun import KiveRun
 from .runstate import RunState
+from .app import App
+from .kivebatch import KiveBatch
 from .find_dataset import \
     find_kive_dataset, ALLOWED_GROUPS, find_name_and_permissions_match
 import kivecli.download as kivedownload
@@ -61,30 +63,43 @@ def cli_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def create_batch(name: str) -> Mapping[str, object]:
+def create_batch(name: str) -> KiveBatch:
     with login() as kive:
         description = ''
         old_batches = [batch.raw for batch in findbatches(name=name)]
         batch = find_name_and_permissions_match(old_batches, 'batch')
 
         if batch is None:
-            batch = kive.endpoints.batches.post(json=dict(
+            batch_raw = kive.endpoints.batches.post(json=dict(
                 name=name,
                 description=description,
                 groups_allowed=ALLOWED_GROUPS))
             logger.debug("Created new batch named %s.", escape(name))
+            return KiveBatch.from_json(batch_raw)
         else:
             logger.debug("Found existing batch named %s.", escape(name))
+            return KiveBatch.from_json(batch)
 
-    return batch
+    # This line should never be reached, but satisfies type checker
+    raise RuntimeError("Unreachable code")
 
 
-def find_kive_containerapp(app_id: Optional[str]) -> Mapping[str, object]:
+def find_kive_containerapp(app_id: Optional[str]) -> App:
+    """Find and return a Kive container app by ID.
+    
+    Args:
+        app_id: The ID of the container app
+        
+    Returns:
+        App object with typed fields
+        
+    Raises:
+        UserError: If app_id is not provided
+    """
     if app_id is not None:
         with login() as kive:
-            ret: Mapping[str, object] \
-                = kive.endpoints.containerapps.get(app_id)
-        return ret
+            app_raw = kive.endpoints.containerapps.get(app_id)
+            return App._from_json(app_raw)
 
     raise UserError("Value for app id must be provided.")
 
@@ -187,14 +202,14 @@ def main_logged_in(kive: kiveapi.KiveAPI,
                    ) -> int:
     # Get the app from a container family.
     app = find_kive_containerapp(str(app_id))
-    app_link = URL(kive.server_url + app["absolute_url"])
-    app_name: str = str(app["name"])
-    app_container: str = str(app["container_name"])
+    app_link = URL(kive.server_url + app.absolute_url)
+    app_name: str = app.name
+    app_container: str = app.container_name
     logger.debug("Using app %s.", escape(app_link))
     logger.debug("App name is %s.", escape(app_name))
     logger.debug("App container is %s.", escape(app_container))
 
-    appid = app['id']
+    appid = app.id.value
     appargs = kive.endpoints.containerapps.get(f"{appid}/argument_list")
     input_appargs = [x for x in appargs if x["type"] == "I"]
     if len(inputs) > len(input_appargs):
@@ -232,14 +247,14 @@ def main_logged_in(kive: kiveapi.KiveAPI,
     run_name_top: str = run_name if run_name is not None else 'A kivecli run'
     runspec = {
         "name": run_name_top,
-        "app": app["url"],
+        "app": app.url.value,
         "groups_allowed": ALLOWED_GROUPS,
         "datasets": dataset_list,
     }
 
     if batch is not None:
         kivebatch = create_batch(batch)
-        runspec["batch"] = kivebatch["url"]
+        runspec["batch"] = kivebatch.url.value
 
     logger.debug("Starting the run.")
     containerrun = KiveRun.from_json(
