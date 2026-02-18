@@ -201,8 +201,79 @@ class Container:
 
                 local_container = Container.__from_json(container)
                 logger.info(
-                    "Successfully uploaded container with ID %s.", local_container.id
+                    "Successfully uploaded container with ID %s.",
+                    local_container.id.value,
                 )
+
+                # For singularity containers, trigger app creation
+                # The Kive REST API doesn't automatically create apps for
+                # SIMG containers. We need to GET the content (which parses
+                # the deffile) and create apps manually.
+                container_id = local_container.id.value
+                try:
+                    logger.debug("Fetching container content to create apps...")
+                    content_url = (
+                        f"{kive.server_url}/api/containers/{container_id}/content/"
+                    )
+                    content_response = kive.get(content_url)
+                    content_response.raise_for_status()
+                    content_data = content_response.json()
+
+                    applist = content_data.get("applist", [])
+                    if applist:
+                        logger.debug(
+                            "Found %s app(s) in container deffile.",
+                            len(applist),
+                        )
+                        for app_info in applist:
+                            if "name" not in app_info:
+                                raise UserError(
+                                    "App info missing 'name' field: %s", app_info
+                                )
+                            if "description" not in app_info:
+                                logger.debug(
+                                    "App info missing 'description' field, "
+                                    "defaulting to empty string."
+                                )
+                            if "threads" not in app_info:
+                                raise UserError(
+                                    "App info missing 'threads' field: %s", app_info
+                                )
+                            if "memory" not in app_info:
+                                raise UserError(
+                                    "App info missing 'memory' field: %s", app_info
+                                )
+
+                            # Create each app via the containerapps endpoint
+                            app_data = {
+                                "container": local_container.url.value,
+                                "name": app_info.get("name", ""),
+                                "description": app_info.get("description", ""),
+                                "threads": app_info.get("threads", 1),
+                                "memory": app_info.get("memory", 5000),
+                            }
+
+                            # Add inputs/outputs if present
+                            if "inputs" in app_info:
+                                app_data["inputs"] = app_info["inputs"]
+                            if "outputs" in app_info:
+                                app_data["outputs"] = app_info["outputs"]
+
+                            logger.debug(f"Creating app: {app_data['name']}")
+                            kive.endpoints.containerapps.post(json=app_data)
+
+                        logger.info(
+                            "Successfully created %s app(s) for container.",
+                            len(applist),
+                        )
+                    else:
+                        logger.warning("No apps found in container deffile.")
+                except kiveapi.KiveServerException as e:
+                    logger.warning("Failed to create apps from container: %s", e)
+                except kiveapi.KiveClientException as e:
+                    logger.warning("Failed to create apps from container: %s", e)
+                except Exception as e:
+                    logger.warning("Unexpected error creating apps: %s", e)
 
                 return local_container
 
