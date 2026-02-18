@@ -269,7 +269,7 @@ def main_logged_in(
     logger.debug("Started run named %s at %s.", escape(run_name_top), escape(url))
 
     if not nowait:
-        await_containerrun(containerrun)
+        containerrun = await_containerrun(containerrun)
         if output is not None:
             kivedownload.main_after_wait(
                 output=output,
