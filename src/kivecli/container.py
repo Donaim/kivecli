@@ -93,7 +93,9 @@ def _validate_app_info(app_info: Mapping[str, object], appname: str) -> Optional
     app_errors = app_info.get("error_messages")
     if app_errors:
         if not hasattr(app_errors, "__iter__"):
-            raise UserError("Invalid app_info format: 'error_messages' should be iterable.")
+            raise UserError(
+                "Invalid app_info format: 'error_messages' should be iterable."
+            )
         else:
             app_errors = list(app_errors)  # Ensure it's a list for multiple iterations
         return (
@@ -141,7 +143,9 @@ def _create_single_app(
     """
     appname = app_info.get("appname", "")
     io_args = app_info.get("io_args")
-    assert io_args is not None and len(io_args) == 2  # Already validated
+    assert (
+        io_args is not None and hasattr(io_args, "__iter__") and len(list(io_args)) == 2
+    )  # Already validated, so this should never fail
 
     inputs_str, outputs_str = io_args
     # Default to standard names if None
