@@ -1,15 +1,15 @@
 
 import os
-from contextvars import ContextVar
 from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import Iterator
 
 import kiveapi
 
-from .usererror import UserError
-from .logger import logger
 from .escape import escape
+from .logger import logger
 from .url import URL
+from .usererror import UserError
 
 session: ContextVar[kiveapi.KiveAPI] = ContextVar("KiveSession")
 

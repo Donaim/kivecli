@@ -1,17 +1,17 @@
 #! /usr/bin/env python3
 
 import argparse
-from typing import Sequence, Iterator, Mapping
 import sys
-
-from .mainwrap import mainwrap
-from .parsecli import parse_cli
-from .login import login
-from .usererror import UserError
-from .logger import logger
-from .kiverun import KiveRun
+from typing import Iterator, Mapping, Sequence
 
 import kiveapi
+
+from .kiverun import KiveRun
+from .logger import logger
+from .login import login
+from .mainwrap import mainwrap
+from .parsecli import parse_cli
+from .usererror import UserError
 
 
 def cli_parser() -> argparse.ArgumentParser:

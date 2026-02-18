@@ -1,14 +1,14 @@
 #! /usr/bin/env python3
 
-import os
 import argparse
-from typing import Sequence, BinaryIO
+import os
 import tempfile
+from typing import BinaryIO, Sequence
 
-from .zip import zip_directory_to_stream
 from .createpipelinejson import print_pipeline_json
 from .mainwrap import mainwrap
 from .parsecli import parse_cli
+from .zip import zip_directory_to_stream
 
 
 def cli_parser() -> argparse.ArgumentParser:

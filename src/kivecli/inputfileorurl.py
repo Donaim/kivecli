@@ -2,10 +2,10 @@
 import argparse
 from pathlib import Path
 
+from .escape import escape
 from .pathorurl import PathOrURL
 from .urlargument import url_argument
 from .usererror import UserError
-from .escape import escape
 
 
 def input_file_or_url(string: str) -> PathOrURL:

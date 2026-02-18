@@ -1,12 +1,13 @@
-from dataclasses import dataclass
-from typing import Mapping, MutableMapping, TextIO, Iterator, Optional
 import json
+from dataclasses import dataclass
+from typing import Iterator, Mapping, MutableMapping, Optional, TextIO
 
-from .url import URL
-from .login import login
+import kiveapi
+
 from .containerfamilyid import ContainerFamilyId
 from .logger import logger
-import kiveapi
+from .login import login
+from .url import URL
 
 
 @dataclass(frozen=True)
@@ -94,7 +95,10 @@ class ContainerFamily:
 
     @staticmethod
     def __from_json(raw: Mapping[str, object]) -> "ContainerFamily":
-        """Internal method to construct ContainerFamily from JSON. Do not use directly."""
+        """Internal method to construct ContainerFamily from JSON.
+
+        Do not use directly.
+        """
         id = ContainerFamilyId(int(str(raw["id"])))
         url = URL(str(raw["url"]))
         name = str(raw["name"])

@@ -1,7 +1,7 @@
 
+import logging
 from argparse import ArgumentParser, Namespace
 from typing import Sequence
-import logging
 
 from .logger import logger
 

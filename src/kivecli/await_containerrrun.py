@@ -2,9 +2,9 @@
 import time
 from typing import Optional
 
-from .logger import logger
 from .kiverun import KiveRun
-from .runstate import RunState, ACTIVE_STATES, FAIL_STATES
+from .logger import logger
+from .runstate import ACTIVE_STATES, FAIL_STATES, RunState
 
 
 def await_containerrun(containerrun: KiveRun) -> KiveRun:

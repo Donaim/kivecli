@@ -2,8 +2,8 @@
 
 import argparse
 import json
-from typing import Mapping, MutableMapping, Sequence, Union, TextIO
 import sys
+from typing import Mapping, MutableMapping, Sequence, TextIO, Union
 
 from .mainwrap import mainwrap
 from .parsecli import parse_cli

@@ -1,13 +1,13 @@
 #! /usr/bin/env python3
 
-import os
-import zipfile
 import argparse
+import os
 import sys
+import zipfile
 from typing import BinaryIO, Sequence
 
-from .mainwrap import mainwrap
 from .dirpath import dir_path
+from .mainwrap import mainwrap
 
 
 def zip_directory_to_stream(directory_path: str,

@@ -2,8 +2,8 @@
 import sys
 from typing import Callable, Sequence
 
-from .usererror import UserError
 from .logger import logger
+from .usererror import UserError
 
 
 def mainwrap(main: Callable[[Sequence[str]], int]) -> None:

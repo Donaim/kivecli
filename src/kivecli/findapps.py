@@ -1,19 +1,18 @@
 #! /usr/bin/env python3
 
 import argparse
-from typing import Mapping, Sequence, Iterator, Optional, MutableMapping
 import sys
-
-from .mainwrap import mainwrap
-from .parsecli import parse_cli
-from .usererror import UserError
-from .logger import logger
-from .app import App
-from .container import Container
-from .escape import escape
+from typing import Iterator, Mapping, MutableMapping, Optional, Sequence
 
 import kiveapi
 
+from .app import App
+from .container import Container
+from .escape import escape
+from .logger import logger
+from .mainwrap import mainwrap
+from .parsecli import parse_cli
+from .usererror import UserError
 
 DEFAULT_PAGESIZE = 10
 

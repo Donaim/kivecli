@@ -1,19 +1,18 @@
 #! /usr/bin/env python3
 
 import argparse
-from typing import Mapping, Sequence, Iterator, Optional, MutableMapping
 import sys
-
-from .mainwrap import mainwrap
-from .parsecli import parse_cli
-from .login import login
-from .usererror import UserError
-from .logger import logger
-from .dataset import Dataset
-from .md5checksum import MD5Checksum
+from typing import Iterator, Mapping, MutableMapping, Optional, Sequence
 
 import kiveapi
 
+from .dataset import Dataset
+from .logger import logger
+from .login import login
+from .mainwrap import mainwrap
+from .md5checksum import MD5Checksum
+from .parsecli import parse_cli
+from .usererror import UserError
 
 DEFAULT_PAGESIZE = 10
 

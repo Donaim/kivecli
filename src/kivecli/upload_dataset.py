@@ -2,18 +2,18 @@
 
 import argparse
 from pathlib import Path
-from typing import Sequence, Optional
-
-from .logger import logger
-from .mainwrap import mainwrap
-from .parsecli import parse_cli
-from .login import login
-from .escape import escape
-from .usererror import UserError
-from .dataset import Dataset as LocalDataset
+from typing import Optional, Sequence
 
 import kiveapi
 from kiveapi.dataset import Dataset as KiveDataset
+
+from .dataset import Dataset as LocalDataset
+from .escape import escape
+from .logger import logger
+from .login import login
+from .mainwrap import mainwrap
+from .parsecli import parse_cli
+from .usererror import UserError
 
 
 def cli_parser() -> argparse.ArgumentParser:

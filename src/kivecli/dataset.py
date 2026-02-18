@@ -1,15 +1,15 @@
 
-from dataclasses import dataclass
-from typing import Mapping, Iterator, Optional, TextIO
 import json
+from dataclasses import dataclass
+from typing import Iterator, Mapping, Optional, TextIO
 
-from .url import URL
+from .datasetid import DatasetId
+from .dirpath import DirPath
+from .escape import escape
+from .logger import logger
 from .login import login
 from .md5checksum import MD5Checksum
-from .dirpath import DirPath
-from .logger import logger
-from .escape import escape
-from .datasetid import DatasetId
+from .url import URL
 
 
 @dataclass(frozen=True)

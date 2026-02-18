@@ -1,15 +1,14 @@
 #! /usr/bin/env python3
 
 import argparse
-from typing import Mapping, Sequence, Iterator, Optional, MutableMapping
 import sys
+from typing import Iterator, Mapping, MutableMapping, Optional, Sequence
 
+from .containerfamily import ContainerFamily
+from .logger import logger
 from .mainwrap import mainwrap
 from .parsecli import parse_cli
 from .usererror import UserError
-from .logger import logger
-from .containerfamily import ContainerFamily
-
 
 DEFAULT_PAGESIZE = 10
 

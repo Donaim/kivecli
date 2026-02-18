@@ -1,24 +1,24 @@
+import json
 from dataclasses import dataclass
+from functools import cached_property
 from typing import (
-    Mapping,
-    MutableMapping,
-    TextIO,
-    Sequence,
     AbstractSet,
     Iterator,
+    Mapping,
+    MutableMapping,
     Optional,
+    Sequence,
+    TextIO,
 )
-from functools import cached_property
-import json
 
-from .batchid import BatchId
-from .url import URL
-from .kiverun import KiveRun
-from .login import login
-from .logger import logger
-from .escape import escape
 import kiveapi
 
+from .batchid import BatchId
+from .escape import escape
+from .kiverun import KiveRun
+from .logger import logger
+from .login import login
+from .url import URL
 
 DEFAULT_PAGESIZE = 1000
 

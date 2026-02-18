@@ -2,11 +2,11 @@
 
 import argparse
 from pathlib import Path
-from typing import Sequence, Optional
+from typing import Optional, Sequence
 
+from .container import Container as LocalContainer
 from .mainwrap import mainwrap
 from .parsecli import parse_cli
-from .container import Container as LocalContainer
 
 
 def cli_parser() -> argparse.ArgumentParser:

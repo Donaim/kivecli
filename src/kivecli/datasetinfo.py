@@ -1,10 +1,10 @@
 
-from typing import Iterator, Mapping
 from dataclasses import dataclass
+from typing import Iterator, Mapping
 
-from .url import URL
-from .login import login
 from .argumenttype import ArgumentType
+from .login import login
+from .url import URL
 
 
 @dataclass(frozen=True)
