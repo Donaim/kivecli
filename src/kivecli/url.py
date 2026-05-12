@@ -1,7 +1,8 @@
 
-from .usererror import UserError
-from urllib.parse import urlparse
 from dataclasses import dataclass
+from urllib.parse import urlparse
+
+from .usererror import UserError
 
 
 @dataclass(frozen=True)

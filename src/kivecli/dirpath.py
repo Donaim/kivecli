@@ -1,11 +1,10 @@
 
-from pathlib import Path
 import os
+from pathlib import Path
 from typing import NewType
 
-from .usererror import UserError
 from .escape import escape
-
+from .usererror import UserError
 
 DirPath = NewType('DirPath', Path)
 

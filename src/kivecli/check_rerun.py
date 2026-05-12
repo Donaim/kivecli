@@ -2,19 +2,19 @@
 
 import argparse
 import sys
-from typing import Sequence, List, NamedTuple
 from dataclasses import dataclass
+from typing import List, NamedTuple, Sequence
 
-from .logger import logger
-from .mainwrap import mainwrap
-from .parsecli import parse_cli
-from .login import login
-from .findrun import find_run
-from .runfilesfilter import RunFilesFilter
 from .argumenttype import ArgumentType
-from .kiverun import KiveRun
 from .dataset import Dataset
 from .escape import escape
+from .findrun import find_run
+from .kiverun import KiveRun
+from .logger import logger
+from .login import login
+from .mainwrap import mainwrap
+from .parsecli import parse_cli
+from .runfilesfilter import RunFilesFilter
 from .runid import RunId
 
 

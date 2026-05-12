@@ -1,11 +1,10 @@
 
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
 from typing import Iterable
 
-from .datasetinfo import DatasetInfo
 from .argumenttype import ArgumentType
-
+from .datasetinfo import DatasetInfo
 
 NAME_SCHEME = "{type}: {name}"
 

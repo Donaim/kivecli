@@ -3,12 +3,12 @@
 import argparse
 from typing import Sequence
 
+from .findrun import find_run
+from .kiverun import KiveRun
+from .logger import logger
+from .login import login
 from .mainwrap import mainwrap
 from .parsecli import parse_cli
-from .login import login
-from .findrun import find_run
-from .logger import logger
-from .kiverun import KiveRun
 
 
 def cli_parser() -> argparse.ArgumentParser:

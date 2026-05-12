@@ -1,8 +1,7 @@
 import hashlib
-from typing import cast, BinaryIO, Mapping, Iterable, Optional
+from typing import BinaryIO, Iterable, Mapping, Optional, cast
 
 import kiveapi
-
 
 ALLOWED_GROUPS = ['Everyone']
 

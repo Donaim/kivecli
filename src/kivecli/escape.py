@@ -1,7 +1,7 @@
 
+import json
 from pathlib import Path
 from typing import NoReturn, Union
-import json
 
 from .pathorurl import PathOrURL
 from .url import URL
