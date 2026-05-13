@@ -51,7 +51,7 @@ def main_typed(
     users: Optional[Sequence[str]],
     groups: Optional[Sequence[str]],
     is_json: bool,
-) -> int:
+) -> None:
     """
     Main entry point for makecontainer command.
 
@@ -63,9 +63,6 @@ def main_typed(
         users: List of users to grant access
         groups: List of groups to grant access
         is_json: Whether to output full JSON info
-
-    Returns:
-        Exit code (0 for success)
     """
     container = LocalContainer.create(
         image_path=image_path,
@@ -85,8 +82,6 @@ def main_typed(
     else:
         print(container.id)
 
-    return 0
-
 
 def main(argv: Sequence[str]) -> int:
     """
@@ -101,7 +96,7 @@ def main(argv: Sequence[str]) -> int:
     parser = cli_parser()
     args = parse_cli(parser, argv)
 
-    return main_typed(
+    main_typed(
         image_path=args.image,
         family_name_or_id=args.family,
         tag=args.tag,
@@ -110,6 +105,7 @@ def main(argv: Sequence[str]) -> int:
         groups=args.groups,
         is_json=args.json,
     )
+    return 0
 
 
 def cli() -> None:
