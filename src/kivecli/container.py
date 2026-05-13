@@ -15,6 +15,42 @@ from .url import URL
 from .usererror import UserError
 
 
+def find_container_family_by_id(family_name_or_id: str) -> Optional[ContainerFamily]:
+    """Find a container family by its numeric ID.
+
+    Args:
+        family_id: Numeric ID of the container family
+
+    Returns:
+        ContainerFamily object with typed fields
+
+    Raises:
+        UserError: If family is not found
+    """
+
+    try:
+        family_id = int(family_name_or_id)
+    except ValueError:
+        logger.debug("Container family ID is not a valid integer: %s", escape(family_name_or_id))
+        return None
+
+    try:
+        family = ContainerFamily.get_by_id(family_id)
+    except kiveapi.KiveClientException:
+        logger.debug("Error occurred while fetching container family with ID %s", family_id)
+        return None
+
+    if family is None:
+        logger.debug("No container family found with ID %s", family_id)
+        return None
+
+    logger.debug(
+        "Found container family by ID %s: %s", family_id, escape(family.name)
+    )
+
+    return family
+
+
 def find_container_family(family_name_or_id: str) -> ContainerFamily:
     """
     Find a container family by name or ID.
@@ -28,16 +64,11 @@ def find_container_family(family_name_or_id: str) -> ContainerFamily:
     Raises:
         UserError: If family is not found or multiple matches exist
     """
+
     # Try to interpret as ID first
-    try:
-        family_id = int(family_name_or_id)
-        family = ContainerFamily.get_by_id(family_id)
-        logger.debug(
-            "Found container family by ID %s: %s", family_id, escape(family.name)
-        )
+    family = find_container_family_by_id(family_name_or_id)
+    if family is not None:
         return family
-    except (ValueError, kiveapi.KiveClientException):
-        pass
 
     # Search by name
     families = list(ContainerFamily.search(name=family_name_or_id))
