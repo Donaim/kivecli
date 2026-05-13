@@ -46,11 +46,25 @@ def find_container_family(family_name_or_id: str) -> ContainerFamily:
         raise UserError("Container family not found: %s", escape(family_name_or_id))
 
     if len(families) > 1:
-        raise UserError(
-            "Multiple container families found with name %s. "
-            "Please use the family ID instead.",
+        logger.debug(
+            "Multiple container families found matching name %s: %s",
             escape(family_name_or_id),
+            [(f.name, f.id) for f in families]
         )
+        families = [f for f in families if f.name == family_name_or_id]
+        if not families:
+            raise UserError(
+                "Multiple container families found matching name %s"
+                ", but none match exactly: %s",
+                escape(family_name_or_id),
+                [(f.name, f.id) for f in families]
+            )
+        if len(families) > 1:
+            raise UserError(
+                "Multiple container families found with name %s: %s",
+                escape(family_name_or_id),
+                [(f.name, f.id) for f in families]
+            )
 
     family = families[0]
     logger.debug(
