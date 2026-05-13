@@ -15,7 +15,8 @@ from .url import URL
 from .usererror import UserError
 
 
-def find_container_family_by_id(family_name_or_id: str) -> Optional[ContainerFamily]:
+def find_container_family_by_id(family_name_or_id: str) \
+    -> Optional[ContainerFamily]:
     """Find a container family by its numeric ID.
 
     Args:
@@ -38,7 +39,10 @@ def find_container_family_by_id(family_name_or_id: str) -> Optional[ContainerFam
     try:
         family = ContainerFamily.get_by_id(family_id)
     except kiveapi.KiveClientException:
-        logger.debug("Error occurred while fetching container family with ID %s", family_id)
+        logger.debug(
+            "Error occurred while fetching container family with ID %s",
+            family_id
+        )
         return None
 
     if family is None:
