@@ -31,7 +31,8 @@ def find_container_family_by_id(family_name_or_id: str) -> Optional[ContainerFam
     try:
         family_id = int(family_name_or_id)
     except ValueError:
-        logger.debug("Container family ID is not a valid integer: %s", escape(family_name_or_id))
+        logger.debug("Container family ID is not a valid integer: %s",
+                     escape(family_name_or_id))
         return None
 
     try:
