@@ -121,9 +121,11 @@ class App:
                     for raw in results:
                         yield App.__from_json(raw)
 
-                    url = data.get("next")
-                    if not url:
-                        break
+                    if hasattr(data, "get"):
+                        url = data.get("next")
+                        if url:
+                            continue
+                    break
                 except (
                     KeyError,
                     kiveapi.KiveServerException,
