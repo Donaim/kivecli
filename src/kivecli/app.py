@@ -114,7 +114,11 @@ class App:
                     else:
                         data = kive.endpoints.containerapps.get(params=query)
 
-                    for raw in data["results"]:
+                    if "results" in data:
+                        results = data["results"]
+                    else:
+                        results = data
+                    for raw in results:
                         yield App.__from_json(raw)
 
                     url = data.get("next")
