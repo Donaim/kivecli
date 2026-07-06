@@ -2,18 +2,22 @@
 
 import argparse
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union, NoReturn
 
 import kiveapi
 from kiveapi.dataset import Dataset as KiveDataset
 
-from .dataset import Dataset as LocalDataset
 from .escape import escape
+from .find_dataset import find_kive_dataset
 from .logger import logger
 from .login import login
 from .mainwrap import mainwrap
 from .parsecli import parse_cli
+from .pathorurl import PathOrURL
+from .url import URL
 from .usererror import UserError
+
+from .dataset import Dataset as LocalDataset
 
 
 def cli_parser() -> argparse.ArgumentParser:
@@ -34,6 +38,72 @@ def cli_parser() -> argparse.ArgumentParser:
                         help="Print full dataset info as JSON.")
 
     return parser
+
+
+def upload_or_retrieve_dataset(
+    session: kiveapi.KiveAPI,
+    name: Union[str, URL],
+    inputpath: PathOrURL,
+    users: Optional[Sequence[str]] = None,
+    groups: Optional[Sequence[str]] = None,
+) -> Optional[KiveDataset]:
+    """Create a dataset by uploading a file to Kive."""
+
+    def report_found(dataset: KiveDataset) -> None:
+        url = URL(str(dataset.raw["url"]))
+        printname = str(dataset.raw["name"])
+
+        if isinstance(name, str):
+            logger.debug(
+                "Found existing dataset for %s at %s.", escape(name), escape(url)
+            )
+
+        elif isinstance(name, URL):
+            logger.debug(
+                "Found existing dataset at %s for %s.", escape(url), escape(printname)
+            )
+
+        else:
+            x: NoReturn = name
+            assert x
+
+    if users is None and groups is None:
+        raise ValueError("A list of users or a list of groups is required.")
+
+    if isinstance(inputpath, Path):
+        with open(inputpath, "rb") as inputfile:
+            found = find_kive_dataset(session, inputfile)
+    elif isinstance(inputpath, URL):
+        found = session.get(inputpath.value).json()
+    else:
+        x: NoReturn = inputpath
+        assert x
+
+    if found:
+        dataset: KiveDataset = KiveDataset(found, session)
+        report_found(dataset)
+        return dataset
+    elif isinstance(inputpath, URL):
+        return None
+
+    try:
+        return upload_dataset_file(
+            file_path=inputpath,
+            name=str(name),
+            description="None",
+            users=users,
+            groups=groups,
+        )
+
+    except kiveapi.KiveMalformedDataException as e:
+        logger.warning("Upload of %s failed: %s", escape(inputpath), e)
+
+        dataset = session.find_dataset(name=name)[0]
+        if dataset is not None:
+            report_found(dataset)
+            return dataset
+
+    return None
 
 
 def upload_dataset_file(file_path: Path,
