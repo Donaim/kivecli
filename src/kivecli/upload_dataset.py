@@ -97,7 +97,7 @@ def upload_dataset_file(file_path: Path,
             #         groups=groups
             #     )
 
-            dataset = LocalDataset._from_json(kive_dataset.raw)
+            dataset = LocalDataset._from_json(raw)
             logger.info("Successfully uploaded dataset %s with ID %s.",
                         escape(name), dataset.id)
 
