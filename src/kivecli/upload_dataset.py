@@ -79,6 +79,7 @@ def upload_dataset_file(file_path: Path,
                     description=description,
                     handle=handle,
                     cdt=None,
+                    save_in_db=True,
                     users=users,
                     groups=groups
                 )
