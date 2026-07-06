@@ -86,17 +86,6 @@ def upload_dataset_file(file_path: Path,
                     files={"dataset_file": handle},
                 ).json()
 
-            # with open(file_path, "rb") as handle:
-            #     kive_dataset: KiveDataset = kive.add_dataset(
-            #         name=name,
-            #         description=description,
-            #         handle=handle,
-            #         cdt=None,
-            #         save_in_db=True,
-            #         users=users,
-            #         groups=groups
-            #     )
-
             dataset = LocalDataset._from_json(raw)
             logger.info("Successfully uploaded dataset %s with ID %s.",
                         escape(name), dataset.id)
