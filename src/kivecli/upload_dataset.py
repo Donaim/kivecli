@@ -74,15 +74,28 @@ def upload_dataset_file(file_path: Path,
                          escape(str(file_path)), escape(name))
 
             with open(file_path, "rb") as handle:
-                kive_dataset: KiveDataset = kive.add_dataset(
-                    name=name,
-                    description=description,
-                    handle=handle,
-                    cdt=None,
-                    save_in_db=True,
-                    users=users,
-                    groups=groups
-                )
+                raw = kive.post(
+                    "/api/datasets/",
+                    {
+                        "name": name,
+                        "description": description,
+                        "users_allowed": list(users or []),
+                        "groups_allowed": list(groups or []),
+                        "save_in_db": "true",
+                    },
+                    files={"dataset_file": handle},
+                ).json()
+
+            # with open(file_path, "rb") as handle:
+            #     kive_dataset: KiveDataset = kive.add_dataset(
+            #         name=name,
+            #         description=description,
+            #         handle=handle,
+            #         cdt=None,
+            #         save_in_db=True,
+            #         users=users,
+            #         groups=groups
+            #     )
 
             dataset = LocalDataset._from_json(kive_dataset.raw)
             logger.info("Successfully uploaded dataset %s with ID %s.",
