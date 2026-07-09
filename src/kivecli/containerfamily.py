@@ -1,13 +1,15 @@
 import json
 from dataclasses import dataclass
-from typing import Iterator, Mapping, MutableMapping, Optional, TextIO
+from typing import Iterator, Mapping, MutableMapping, Optional, Sequence, TextIO
 
 import kiveapi
 
 from .containerfamilyid import ContainerFamilyId
+from .escape import escape
 from .logger import logger
 from .login import login
 from .url import URL
+from .usererror import UserError
 
 
 @dataclass(frozen=True)
@@ -112,6 +114,66 @@ class ContainerFamily:
             git=git,
             description=description,
         )
+
+    @staticmethod
+    def create(
+        name: str,
+        description: str = "",
+        git: str = "",
+        users: Optional[Sequence[str]] = None,
+        groups: Optional[Sequence[str]] = None,
+    ) -> "ContainerFamily":
+        """Create a new container family on the Kive server.
+
+        Args:
+            name: Name for the container family.
+            description: Description for the container family.
+            git: URL of the Git repository.
+            users: List of users to grant access.
+            groups: List of groups to grant access.
+
+        Returns:
+            ContainerFamily object for the created family.
+
+        Raises:
+            UserError: If creation fails.
+        """
+        with login() as kive:
+            try:
+                payload: dict[str, object] = {
+                    "name": name,
+                    "description": description,
+                    "git": git,
+                    "users_allowed": users or [],
+                    "groups_allowed": groups or [],
+                }
+
+                logger.debug(
+                    "Creating container family %s.",
+                    escape(name),
+                )
+
+                raw = kive.endpoints.containerfamilies.post(json=payload)
+
+                family = ContainerFamily.__from_json(raw)
+                logger.info(
+                    "Successfully created container family %s with ID %s.",
+                    escape(family.name),
+                    family.id.value,
+                )
+
+                return family
+
+            except kiveapi.KiveMalformedDataException as e:
+                raise UserError("Failed to create container family: %s", str(e))
+            except kiveapi.KiveServerException as e:
+                raise UserError(
+                    "Server error while creating container family: %s", str(e)
+                )
+            except kiveapi.KiveClientException as e:
+                raise UserError(
+                    "Client error while creating container family: %s", str(e)
+                )
 
     def dump(self, out: TextIO) -> None:
         json.dump(self.raw, out, indent="\t")
