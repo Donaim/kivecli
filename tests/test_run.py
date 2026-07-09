@@ -28,7 +28,7 @@ def make_input_apparg(
     url: str,
     allow_multiple: bool = False,
     position: Any = None,
-) -> dict:
+) -> dict[str, Any]:
     return {
         "name": name,
         "type": "I",
