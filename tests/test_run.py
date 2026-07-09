@@ -1,16 +1,15 @@
 from types import ModuleType, SimpleNamespace
-from typing import Any
 
 import pytest
 
 # Provide a dummy kiveapi module so imports succeed without network access.
-dummy_kiveapi: Any = ModuleType("kiveapi")
-dummy_kiveapi.KiveAPI = object
-dummy_kiveapi.KiveAuthException = Exception
-dummy_kiveapi.KiveMalformedDataException = Exception
-dummy_dataset: Any = ModuleType("kiveapi.dataset")
-dummy_dataset.Dataset = object
-dummy_kiveapi.dataset = dummy_dataset
+dummy_kiveapi = ModuleType("kiveapi")
+dummy_kiveapi.KiveAPI = object  # type: ignore[attr-defined]
+dummy_kiveapi.KiveAuthException = Exception  # type: ignore[attr-defined]
+dummy_kiveapi.KiveMalformedDataException = Exception  # type: ignore[attr-defined]
+dummy_dataset = ModuleType("kiveapi.dataset")
+dummy_dataset.Dataset = object  # type: ignore[attr-defined]
+dummy_kiveapi.dataset = dummy_dataset  # type: ignore[attr-defined]
 import sys  # noqa: E402
 sys.modules.setdefault("kiveapi", dummy_kiveapi)  # noqa: E402
 sys.modules.setdefault("kiveapi.dataset", dummy_kiveapi.dataset)  # noqa: E402
@@ -27,8 +26,8 @@ def make_input_apparg(
     name: str,
     url: str,
     allow_multiple: bool = False,
-    position: Any = None,
-) -> dict[str, Any]:
+    position: object = None,
+) -> dict[str, object]:
     return {
         "name": name,
         "type": "I",

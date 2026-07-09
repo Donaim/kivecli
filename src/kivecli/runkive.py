@@ -3,7 +3,7 @@
 import argparse
 import sys
 from pathlib import Path
-from typing import Any, BinaryIO, Iterable, Iterator, Optional, Sequence, Union
+from typing import BinaryIO, Iterable, Iterator, Optional, Sequence, Union
 
 import kiveapi
 from kiveapi.dataset import Dataset
@@ -118,9 +118,9 @@ def get_input_datasets(inputs: Iterable[PathOrURL]) -> Iterator[Dataset]:
 
 
 def _map_inputs_to_args(
-    input_appargs: list[dict[str, Any]],
+    input_appargs: list[dict[str, object]],
     input_datasets: list[Dataset],
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     """Map resolved datasets to app arguments.
 
     Args:
@@ -163,10 +163,11 @@ def _map_inputs_to_args(
     multi_arg = multi_appargs[0]
     single_appargs = [x for x in input_appargs if not x.get("allow_multiple")]
 
-    def _sort_key(arg: dict[str, Any]) -> tuple[int, int]:
+    def _sort_key(arg: dict[str, object]) -> tuple[int, int]:
         pos = arg.get("position")
         if pos is not None:
-            return (0, int(pos))
+            assert isinstance(pos, int)
+            return (0, pos)
         return (1, 0)
 
     single_sorted = sorted(single_appargs, key=_sort_key)
@@ -187,15 +188,17 @@ def _map_inputs_to_args(
             return input_appargs_mapped, dataset_list
 
         num_multi = num_inputs - len(single_sorted)
+        multi_name = multi_arg["name"]
+        assert isinstance(multi_name, str)
         if num_multi == 0:
             logger.warning(
                 "Multiple input argument %s received no inputs.",
-                escape(multi_arg["name"]),
+                escape(multi_name),
             )
         else:
             logger.debug(
                 "Binding %s input files to multiple input argument %s.",
-                num_multi, escape(multi_arg["name"]),
+                num_multi, escape(multi_name),
             )
 
         input_appargs_mapped = list(single_sorted) + [multi_arg] * num_multi
@@ -213,15 +216,17 @@ def _map_inputs_to_args(
             })
         return input_appargs_mapped, dataset_list
     else:
+        multi_name = multi_arg["name"]
+        assert isinstance(multi_name, str)
         if num_inputs == 0:
             raise UserError(
                 "Multiple input argument %s requires at least one input.",
-                escape(multi_arg["name"]),
+                escape(multi_name),
             )
 
         logger.debug(
             "Binding %s input files to multiple input argument %s.",
-            num_inputs, escape(multi_arg["name"]),
+            num_inputs, escape(multi_name),
         )
 
         input_appargs_mapped = [multi_arg] * num_inputs
@@ -237,9 +242,9 @@ def _map_inputs_to_args(
 
 
 def _build_run_datasets(
-    input_appargs: list[dict[str, Any]],
+    input_appargs: list[dict[str, object]],
     inputs: Sequence[PathOrURL],
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[Dataset]]:
+) -> tuple[list[dict[str, object]], list[dict[str, object]], list[Dataset]]:
     """Resolve datasets and build the dataset payload for a run.
 
     Args:
@@ -289,7 +294,8 @@ def main_logged_in(
     )
 
     for x, y in zip(input_appargs_mapped, inputs):
-        kive_name: str = x["name"]
+        kive_name = x["name"]
+        assert isinstance(kive_name, str)
         if isinstance(y, Path):
             filename: Union[str, URL] = y.name
         else:
@@ -301,7 +307,8 @@ def main_logged_in(
         )
 
     for apparg, dataset in zip(input_appargs_mapped, input_datasets):
-        name: str = apparg["name"]
+        name = apparg["name"]
+        assert isinstance(name, str)
         checksum = dataset.raw["MD5_checksum"]
         logger.debug("Input %s has MD5 hash %s.", escape(name), checksum)
 
