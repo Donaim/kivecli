@@ -3,7 +3,7 @@
 import argparse
 import sys
 from pathlib import Path
-from typing import BinaryIO, Iterable, Iterator, Optional, Sequence, Union
+from typing import Any, BinaryIO, Iterable, Iterator, Optional, Sequence, Union
 
 import kiveapi
 from kiveapi.dataset import Dataset
@@ -117,6 +117,148 @@ def get_input_datasets(inputs: Iterable[PathOrURL]) -> Iterator[Dataset]:
             yield dataset
 
 
+def _map_inputs_to_args(
+    input_appargs: list[dict[str, Any]],
+    input_datasets: list[Dataset],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Map resolved datasets to app arguments.
+
+    Args:
+        input_appargs: List of input argument dicts from the server.
+        input_datasets: Resolved Dataset objects for each input file.
+
+    Returns:
+        (input_appargs_mapped, dataset_list):
+            input_appargs_mapped: one arg dict per dataset (for logging).
+            dataset_list: payload entries for the run's "datasets" field.
+    """
+    multi_appargs = [x for x in input_appargs if x.get("allow_multiple")]
+
+    if not multi_appargs:
+        num_inputs = len(input_datasets)
+        if num_inputs > len(input_appargs):
+            raise UserError(
+                "At most %s inputs supported, but got %s.",
+                len(input_appargs), num_inputs,
+            )
+        if num_inputs < len(input_appargs):
+            logger.warning(
+                "At least %s inputs supported, but got %s.",
+                len(input_appargs), num_inputs,
+            )
+
+        input_appargs_mapped = input_appargs[:num_inputs]
+        dataset_list = [
+            {"argument": arg["url"], "dataset": ds.raw["url"]}
+            for arg, ds in zip(input_appargs_mapped, input_datasets)
+        ]
+        return input_appargs_mapped, dataset_list
+
+    if len(multi_appargs) > 1:
+        raise UserError(
+            "Cannot determine which input files to assign to which "
+            "argument. Multiple arguments accept multiple files."
+        )
+
+    multi_arg = multi_appargs[0]
+    single_appargs = [x for x in input_appargs if not x.get("allow_multiple")]
+
+    def _sort_key(arg: dict[str, Any]) -> tuple[int, int]:
+        pos = arg.get("position")
+        if pos is not None:
+            return (0, int(pos))
+        return (1, 0)
+
+    single_sorted = sorted(single_appargs, key=_sort_key)
+    num_inputs = len(input_datasets)
+
+    if single_sorted:
+        if num_inputs < len(single_sorted):
+            logger.warning(
+                "At least %s non-multiple input arguments, but got %s.",
+                len(single_sorted), num_inputs,
+            )
+            bound_single = single_sorted[:num_inputs]
+            input_appargs_mapped = bound_single
+            dataset_list = [
+                {"argument": arg["url"], "dataset": ds.raw["url"]}
+                for arg, ds in zip(bound_single, input_datasets)
+            ]
+            return input_appargs_mapped, dataset_list
+
+        num_multi = num_inputs - len(single_sorted)
+        if num_multi == 0:
+            logger.warning(
+                "Multiple input argument %s received no inputs.",
+                escape(multi_arg["name"]),
+            )
+        else:
+            logger.debug(
+                "Binding %s input files to multiple input argument %s.",
+                num_multi, escape(multi_arg["name"]),
+            )
+
+        input_appargs_mapped = list(single_sorted) + [multi_arg] * num_multi
+        dataset_list = []
+        for i, arg in enumerate(single_sorted):
+            dataset_list.append({
+                "argument": arg["url"],
+                "dataset": input_datasets[i].raw["url"],
+            })
+        for i, ds in enumerate(input_datasets[len(single_sorted):], start=1):
+            dataset_list.append({
+                "argument": multi_arg["url"],
+                "dataset": ds.raw["url"],
+                "multi_position": i,
+            })
+        return input_appargs_mapped, dataset_list
+    else:
+        if num_inputs == 0:
+            raise UserError(
+                "Multiple input argument %s requires at least one input.",
+                escape(multi_arg["name"]),
+            )
+
+        logger.debug(
+            "Binding %s input files to multiple input argument %s.",
+            num_inputs, escape(multi_arg["name"]),
+        )
+
+        input_appargs_mapped = [multi_arg] * num_inputs
+        dataset_list = [
+            {
+                "argument": multi_arg["url"],
+                "dataset": ds.raw["url"],
+                "multi_position": i + 1,
+            }
+            for i, ds in enumerate(input_datasets)
+        ]
+        return input_appargs_mapped, dataset_list
+
+
+def _build_run_datasets(
+    input_appargs: list[dict[str, Any]],
+    inputs: Sequence[PathOrURL],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[Dataset]]:
+    """Resolve datasets and build the dataset payload for a run.
+
+    Args:
+        input_appargs: List of input argument dicts from the server.
+        inputs: Input file paths or URLs from the CLI.
+
+    Returns:
+        (input_appargs_mapped, dataset_list, input_datasets):
+            input_appargs_mapped: one arg dict per input file (for logging).
+            dataset_list: payload for the run's "datasets" field.
+            input_datasets: resolved Dataset objects.
+    """
+    input_datasets = list(get_input_datasets(inputs))
+    input_appargs_mapped, dataset_list = _map_inputs_to_args(
+        input_appargs, input_datasets,
+    )
+    return input_appargs_mapped, dataset_list, input_datasets
+
+
 def main_logged_in(
     kive: kiveapi.KiveAPI,
     output: Optional[DirPath],
@@ -141,16 +283,12 @@ def main_logged_in(
     appid = app.id.value
     appargs = kive.endpoints.containerapps.get(f"{appid}/argument_list")
     input_appargs = [x for x in appargs if x["type"] == "I"]
-    if len(inputs) > len(input_appargs):
-        raise UserError(
-            "At most %s inputs supported, but got %s.", len(input_appargs), len(inputs)
-        )
-    if len(inputs) < len(input_appargs):
-        logger.warning(
-            "At least %s inputs supported, but got %s.", len(input_appargs), len(inputs)
-        )
 
-    for x, y in zip(input_appargs, inputs):
+    input_appargs_mapped, dataset_list, input_datasets = _build_run_datasets(
+        input_appargs, inputs
+    )
+
+    for x, y in zip(input_appargs_mapped, inputs):
         kive_name: str = x["name"]
         if isinstance(y, Path):
             filename: Union[str, URL] = y.name
@@ -162,19 +300,7 @@ def main_logged_in(
             escape(kive_name),
         )
 
-    appargs_urls = [x["url"] for x in input_appargs]
-    input_datasets = list(get_input_datasets(inputs))
-
-    datasets_urls = [x.raw["url"] for x in input_datasets]
-    dataset_list = [
-        {
-            "argument": x,
-            "dataset": y,
-        }
-        for (x, y) in zip(appargs_urls, datasets_urls)
-    ]
-
-    for apparg, dataset in zip(input_appargs, input_datasets):
+    for apparg, dataset in zip(input_appargs_mapped, input_datasets):
         name: str = apparg["name"]
         checksum = dataset.raw["MD5_checksum"]
         logger.debug("Input %s has MD5 hash %s.", escape(name), checksum)
