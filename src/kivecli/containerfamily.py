@@ -146,7 +146,6 @@ class ContainerFamily:
                     "git": git,
                     "users_allowed": users or [],
                     "groups_allowed": groups or [],
-                    "num_containers": 0,
                 }
 
                 logger.debug(
